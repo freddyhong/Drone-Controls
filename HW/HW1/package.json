@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "control": "^0.2.3",
+    "matplotlib": "^1.0.0",
+    "numpy": "^0.0.1"
+  }
+}
