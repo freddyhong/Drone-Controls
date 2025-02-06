@@ -1,5 +1,13 @@
 import numpy as np
 
+#Pysical Param
+mass = 11
+Jx = 0.824
+Jy = 1.135
+Jz = 1.759
+Jxz = 0.12
+
+
 def equations_of_motion(t, state, mass, Jx, Jy, Jz, Jxz, forces, moments):
     # Unpack the state vector
     pn, pe, pd, u, v, w, phi, theta, psi, p, q, r = state
