@@ -18,3 +18,6 @@ class Heun(Integrator):
         intg = Euler(self.dt, self.f)
         xe = intg.step(t, x, u) # Euler predictor step
         return x + 0.5*self.dt * (self.f(t, x, u) + self.f(t+self.dt, xe, u))
+
+        
+
