@@ -1,11 +1,11 @@
 import numpy as np
 
 #Pysical Param
-mass = 11
-Jx = 0.824
-Jy = 1.135
-Jz = 1.759
-Jxz = 0.12
+mass = 11 #kg
+Jx = 0.824 #kgm^2
+Jy = 1.135 #kgm^2
+Jz = 1.759 #kgm^2
+Jxz = 0.12 #kgm^2
 
 
 def equations_of_motion(t, state, mass, Jx, Jy, Jz, Jxz, forces, moments):
