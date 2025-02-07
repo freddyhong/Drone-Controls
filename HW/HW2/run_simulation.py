@@ -27,7 +27,7 @@ x = np.array([1, 0])
 x2 = np.array([1, 0])    
 x3 = np.array([1, 0])
 u = 0
-dt = 0.1  
+dt = 0.1
 n = 500  
 T = np.linspace(0, 50, 500)
 
@@ -40,33 +40,33 @@ sol = A*np.exp(-b*T/(2*m))*np.cos(wd*T - phi)
 sol_dot = np.gradient(sol, T)
 
 
-integrator = intg.Euler(dt, f)
+#integrator = intg.Euler(dt, f)
 integrator2 = intg.Heun(dt, f)
 integrator3 = intg.RungeKutta(dt, f)
 
 t_history = [t]
-x_history = [x]
+#x_history = [x]
 x_history2 = [x]
 x_history3 = [x]
 
 for i in range(n):
-    x = integrator.step(t, x, u)
+    #x = integrator.step(t, x, u)
     x2 = integrator2.step(t, x2, u)   
     x3 = integrator3.step(t, x3, u) 
     t = (i + 1) * dt 
     t_history.append(t)
-    x_history.append(x)
+    #x_history.append(x)
     x_history2.append(x2)
     x_history3.append(x3)
 
-x_history = np.array(x_history)
+#x_history = np.array(x_history)
 x_history2 = np.array(x_history2)
 x_history3 = np.array(x_history3)
 t_history = np.array(t_history)
 
 
 plt.figure(figsize=(10, 5))
-plt.plot(t_history, x_history[:, 0], label="Position (x) Euler")
+#plt.plot(t_history, x_history[:, 0], label="Position (x) Euler")
 plt.plot(t_history, x_history2[:, 0], label="Position (x) Heun")
 plt.plot(t_history, x_history3[:, 0], label="Position (x) Runge Kutta")
 plt.plot(T, sol, label="Position (x) Analytical", linestyle='--', color='yellow')
@@ -77,7 +77,7 @@ plt.legend()
 plt.grid()
 
 plt.figure(figsize=(10, 5))
-plt.plot(t_history, x_history[:, 1], label="Velocity (dx/dt) Euler")
+#plt.plot(t_history, x_history[:, 1], label="Velocity (dx/dt) Euler")
 plt.plot(t_history, x_history2[:, 1], label="Velocity (dx/dt) Heun")
 plt.plot(t_history, x_history3[:, 1], label="Velocity (dx/dt) Runge Kutta")
 plt.plot(T, sol_dot, label="Velocity (dx/dt) Analytical", linestyle='--', color='yellow')
