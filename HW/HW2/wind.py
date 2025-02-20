@@ -101,26 +101,50 @@ C_ell_delta_r = 0.0024
 C_n_delta_r = -0.069
 
 
+def aerodynamic_forces(rho, Va, S, c, b,
+                        C_L_0, C_D_0, 
+                        C_L_alpha, C_D_alpha,
+                        C_L_q, C_D_q,
+                        C_L_delta_e, C_D_delta_e,
+                        C_Y_0, C_Y_beta, C_Y_p, C_Y_r, C_Y_delta_a, C_Y_delta_r,
+                        alpha, beta, p, q, r, delta_e, delta_a, delta_r):
 
-def aerodynamic_forces(rho, Va, S, alpha, CD, CL, CD_q, CL_q, CD_delta_e, CL_delta_e, c, q, delta_e):
-    R = np.array([
-        [np.cos(alpha), -np.sin(alpha)],
-        [np.sin(alpha), np.cos(alpha)]
-    ])
-    
-    F_drag_lift = np.array([
-        -0.5 * rho * Va**2 * S * (CD * np.cos(alpha) - CL * np.sin(alpha) 
-                                  + (CD_q * np.cos(alpha) - CL_q * np.sin(alpha)) * (c / (2 * Va)) * q
-                                  + (CD_delta_e * np.cos(alpha) - CL_delta_e * np.sin(alpha)) * delta_e),
+
+    C_L = C_L_0 + C_L_alpha * alpha + C_L_q * (c / (2 * Va)) * q + C_L_delta_e * delta_e
+    C_D = C_D_0 + C_D_alpha * alpha + C_D_q * (c / (2 * Va)) * q + C_D_delta_e * delta_e
+
+    fx_fz = 0.5 * rho * Va**2 * S * np.array([
+        (-C_D * np.cos(alpha) + C_L * np.sin(alpha)) 
+        + (-C_D_q * np.cos(alpha) + C_L_q * np.sin(alpha)) * (c / (2 * Va)) * q
+        + (-C_D_delta_e * np.cos(alpha) + C_L_delta_e * np.sin(alpha)) * delta_e,
         
-        -0.5 * rho * Va**2 * S * (CD * np.sin(alpha) + CL * np.cos(alpha) 
-                                  + (CD_q * np.sin(alpha) + CL_q * np.cos(alpha)) * (c / (2 * Va)) * q
-                                  + (CD_delta_e * np.sin(alpha) + CL_delta_e * np.cos(alpha)) * delta_e)
+        (-C_D * np.sin(alpha) - C_L * np.cos(alpha)) 
+        + (-C_D_q * np.sin(alpha) - C_L_q * np.cos(alpha)) * (c / (2 * Va)) * q
+        + (-C_D_delta_e * np.sin(alpha) - C_L_delta_e * np.cos(alpha)) * delta_e
     ])
-    
-    f_xz = R @ F_drag_lift
-    
-    return f_xz
+
+    f_x, f_z = fx_fz
+
+    f_y = 0.5 * rho * Va**2 * S * (
+        C_Y_0 + C_Y_beta * beta
+        + C_Y_p * (b / (2 * Va)) * p
+        + C_Y_r * (b / (2 * Va)) * r
+        + C_Y_delta_a * delta_a
+        + C_Y_delta_r * delta_r
+    )
+
+    return f_x, f_y, f_z
+
+f_x, f_y, f_z = aerodynamic_forces(rho, Va, S, c, b, 
+                                   C_L_0, C_D_0,
+                                   C_L_alpha, C_D_alpha,
+                                   C_L_q, C_D_q,
+                                   C_L_delta_e, C_D_delta_e,
+                                   C_Y_0, C_Y_beta, C_Y_p, C_Y_r, C_Y_delta_a, C_Y_delta_r,
+                                   alpha, beta, p, q, r, delta_e, delta_a, delta_r)
+
+
+
 
 def aerodynamic_moments(rho, Va, S, c, b, 
                         C_m_0, C_m_alpha, C_m_q, C_m_delta_e, 
@@ -136,14 +160,12 @@ def aerodynamic_moments(rho, Va, S, c, b,
         + C_ell_delta_r * delta_r
     )
 
-    # Pitching moment (m)
     m = 0.5 * rho * Va**2 * S * c * (
         C_m_0 + C_m_alpha * alpha
         + C_m_q * (c / (2 * Va)) * q
         + C_m_delta_e * delta_e
     )
-
-    # Yawing moment (n)
+ 
     n = 0.5 * rho * Va**2 * S * b * (
         C_n_0 + C_n_beta * beta 
         + C_n_p * (b / (2 * Va)) * p 
