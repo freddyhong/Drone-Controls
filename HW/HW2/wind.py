@@ -100,6 +100,19 @@ C_Y_delta_r = 0.19
 C_ell_delta_r = 0.0024
 C_n_delta_r = -0.069
 
+rho = 1.2682
+b = 2.8956
+c = 0.18994
+Va = 
+S = 
+alpha =
+beta =
+p =
+q =
+r = 
+delta_e =
+delta_a =
+delta_r =
 
 def aerodynamic_forces(rho, Va, S, c, b,
                         C_L_0, C_D_0, 
@@ -134,6 +147,7 @@ def aerodynamic_forces(rho, Va, S, c, b,
     )
 
     return f_x, f_y, f_z
+
 
 f_x, f_y, f_z = aerodynamic_forces(rho, Va, S, c, b, 
                                    C_L_0, C_D_0,
@@ -175,6 +189,13 @@ def aerodynamic_moments(rho, Va, S, c, b,
     )
 
     return l, m, n
+
+l, m, n = aerodynamic_moments(rho, Va, S, c, b,
+                                C_m_0, C_m_alpha, C_m_q, C_m_delta_e,
+                                C_ell_0, C_ell_beta, C_ell_p, C_ell_r, C_ell_delta_a, C_ell_delta_r,
+                                C_n_0, C_n_beta, C_n_p, C_n_r, C_n_delta_a, C_n_delta_r,
+                                alpha, beta, p, q, r, delta_e, delta_a, delta_r)
+
 
 t_span = (0, 10)  
 t_eval = np.linspace(0, 10, 100)  
