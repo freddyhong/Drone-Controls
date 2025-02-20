@@ -63,6 +63,45 @@ Jxz = 0  #kg*m^2
 forces = np.array([0, 0, -mass*9.81])  # These are example forces
 moments = np.array([0, 0, 0])  # These are example moments
 
+# C values
+CL0 = 0.23
+CD0 = 0.043
+Cm0 = 0.0135
+CLa= 5.61
+CDa = 0.03
+Cma = -2.74
+CLq = 7.95
+CDq = 0
+Cmq = -38.21
+CLde = 0.13
+CDde = 0.0135
+Cmde = -0.99
+M = 50
+alpha0 = 0.47
+CDp = 0.043
+CY0 = 0
+Cl0 = 0
+Cn0 = 0
+CYb = -0.83
+Clb = -0.13
+Cnb = 0.073
+CYp = 0
+Clp = -0.51
+Cnp = -0.069
+CYr = 0
+Clr = 0.25
+Cnr = -0.095
+CYda = 0.075
+Clda = 0.17
+Cnda = -0.011
+CYdr = 0.19
+Cldr = 0.0024
+Cndr = -0.069
+
+
+
+
+
 t_span = (0, 10)  
 t_eval = np.linspace(0, 10, 100)  
 
