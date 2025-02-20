@@ -63,6 +63,31 @@ Jxz = 0  #kg*m^2
 forces = np.array([0, 0, -mass*9.81])  # These are example forces
 moments = np.array([0, 0, 0])  # These are example moments
 
+
+
+
+
+def aerodynamic_forces(rho, Va, S, alpha, CD, CL, CD_q, CL_q, CD_delta_e, CL_delta_e, c, q, delta_e):
+    R = np.array([
+        [np.cos(alpha), -np.sin(alpha)],
+        [np.sin(alpha), np.cos(alpha)]
+    ])
+    
+    F_drag_lift = np.array([
+        -0.5 * rho * Va**2 * S * (CD * np.cos(alpha) - CL * np.sin(alpha) 
+                                  + (CD_q * np.cos(alpha) - CL_q * np.sin(alpha)) * (c / (2 * Va)) * q
+                                  + (CD_delta_e * np.cos(alpha) - CL_delta_e * np.sin(alpha)) * delta_e),
+        
+        -0.5 * rho * Va**2 * S * (CD * np.sin(alpha) + CL * np.cos(alpha) 
+                                  + (CD_q * np.sin(alpha) + CL_q * np.cos(alpha)) * (c / (2 * Va)) * q
+                                  + (CD_delta_e * np.sin(alpha) + CL_delta_e * np.cos(alpha)) * delta_e)
+    ])
+    
+    f_xz = R @ F_drag_lift
+    
+    return f_xz
+
+
 t_span = (0, 10)  
 t_eval = np.linspace(0, 10, 100)  
 
