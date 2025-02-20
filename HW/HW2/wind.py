@@ -63,48 +63,45 @@ Jxz = 0  #kg*m^2
 forces = np.array([0, 0, -mass*9.81])  # These are example forces
 moments = np.array([0, 0, 0])  # These are example moments
 
-<<<<<<< HEAD
-=======
-# C values
-CL0 = 0.23
-CD0 = 0.043
-Cm0 = 0.0135
-CLa= 5.61
-CDa = 0.03
-Cma = -2.74
-CLq = 7.95
-CDq = 0
-Cmq = -38.21
-CLde = 0.13
-CDde = 0.0135
-Cmde = -0.99
-M = 50
+C_L_0 = 0.23
+C_D_0 = 0.0424
+C_m_0 = 0.0135
+C_L_alpha = 5.61
+C_D_alpha = 0.132
+C_m_alpha = -2.74
+C_L_q = 7.95
+C_D_q = 0.0
+C_m_q = -38.21
+C_L_delta_e = 0.13
+C_D_delta_e = 0.0135
+C_m_delta_e = -0.99
+M = 50.0
 alpha0 = 0.47
-CDp = 0.043
-CY0 = 0
-Cl0 = 0
-Cn0 = 0
-CYb = -0.83
-Clb = -0.13
-Cnb = 0.073
-CYp = 0
-Clp = -0.51
-Cnp = -0.069
-CYr = 0
-Clr = 0.25
-Cnr = -0.095
-CYda = 0.075
-Clda = 0.17
-Cnda = -0.011
-CYdr = 0.19
-Cldr = 0.0024
-Cndr = -0.069
->>>>>>> e5b14df850d966ec33b96cdb62d53992f248ce02
+epsilon = 0.16
+C_D_p = 0.043
+
+
+C_Y_0 = 0.0
+C_ell_0 = 0.0
+C_n_0 = 0.0
+C_Y_beta = -0.98
+C_ell_beta = -0.13
+C_n_beta = 0.073
+C_Y_p = 0.0
+C_ell_p = -0.51
+C_n_p = 0.069
+C_Y_r = 0.0
+C_ell_r = 0.25
+C_n_r = -0.095
+C_Y_delta_a = 0.075
+C_ell_delta_a = 0.17
+C_n_delta_a = -0.011
+C_Y_delta_r = 0.19
+C_ell_delta_r = 0.0024
+C_n_delta_r = -0.069
 
 
 
-
-<<<<<<< HEAD
 def aerodynamic_forces(rho, Va, S, alpha, CD, CL, CD_q, CL_q, CD_delta_e, CL_delta_e, c, q, delta_e):
     R = np.array([
         [np.cos(alpha), -np.sin(alpha)],
@@ -125,8 +122,37 @@ def aerodynamic_forces(rho, Va, S, alpha, CD, CL, CD_q, CL_q, CD_delta_e, CL_del
     
     return f_xz
 
-=======
->>>>>>> e5b14df850d966ec33b96cdb62d53992f248ce02
+def aerodynamic_moments(rho, Va, S, c, b, 
+                        C_m_0, C_m_alpha, C_m_q, C_m_delta_e, 
+                        C_ell_0, C_ell_beta, C_ell_p, C_ell_r, C_ell_delta_a, C_ell_delta_r, 
+                        C_n_0, C_n_beta, C_n_p, C_n_r, C_n_delta_a, C_n_delta_r, 
+                        alpha, beta, p, q, r, delta_e, delta_a, delta_r):
+    
+    l = 0.5 * rho * Va**2 * S * b * (
+        C_ell_0 + C_ell_beta * beta 
+        + C_ell_p * (b / (2 * Va)) * p 
+        + C_ell_r * (b / (2 * Va)) * r 
+        + C_ell_delta_a * delta_a 
+        + C_ell_delta_r * delta_r
+    )
+
+    # Pitching moment (m)
+    m = 0.5 * rho * Va**2 * S * c * (
+        C_m_0 + C_m_alpha * alpha
+        + C_m_q * (c / (2 * Va)) * q
+        + C_m_delta_e * delta_e
+    )
+
+    # Yawing moment (n)
+    n = 0.5 * rho * Va**2 * S * b * (
+        C_n_0 + C_n_beta * beta 
+        + C_n_p * (b / (2 * Va)) * p 
+        + C_n_r * (b / (2 * Va)) * r 
+        + C_n_delta_a * delta_a 
+        + C_n_delta_r * delta_r
+    )
+
+    return l, m, n
 
 t_span = (0, 10)  
 t_eval = np.linspace(0, 10, 100)  
