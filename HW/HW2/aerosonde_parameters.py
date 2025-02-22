@@ -1,5 +1,4 @@
 import numpy as np
-#from tools.rotations import Euler2Quaternion
 
 ######################################################################################
                 #   Initial Conditions
