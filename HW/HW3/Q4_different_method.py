@@ -7,7 +7,7 @@ Jx = 1
 Jy = 1 
 Jz = 2  
 Jxz = 0  
-forces = np.array([0, 0, -mass * 9.81])  # Gravity force
+forces = np.array([0, 0, -mass * 9.81]) 
 moments = np.array([0, 0, 0])  # No moments applied
 
 def equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, forces, moments):
