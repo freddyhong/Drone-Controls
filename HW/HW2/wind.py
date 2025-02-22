@@ -1,27 +1,172 @@
 import numpy as np
-from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from aerosonde_parameters import *
 
-def equations_of_motion(t, state, mass, Jx, Jy, Jz, Jxz, forces, moments):
+# Initial state
+initial_state = np.array([0, 0, 10, 0, 0, 0, 1, 0, 2, 10, 2, 2])  # [north, east, down, u, v, w, p, q, r, phi, theta, psi]
+
+def update_velocity_data(state, wind=np.zeros((6, 1))):
+    steady_state = wind[0:3]  # in NED
+    gust = wind[3:6]  # in body frame
+
+    phi, theta, psi = np.radians(state[9:12])
+
+    # Rotation matrix from body to NED
+    R = np.array([
+        [np.cos(theta) * np.cos(psi), np.cos(theta) * np.sin(psi), -np.sin(theta)],
+        [np.sin(phi) * np.sin(theta) * np.cos(psi) - np.cos(phi) * np.sin(psi), 
+         np.sin(phi) * np.sin(theta) * np.sin(psi) + np.cos(phi) * np.cos(psi), 
+         np.sin(phi) * np.cos(theta)],
+        [np.cos(phi) * np.sin(theta) * np.cos(psi) + np.sin(phi) * np.sin(psi), 
+         np.cos(phi) * np.sin(theta) * np.sin(psi) - np.sin(phi) * np.cos(psi), 
+         np.cos(phi) * np.cos(theta)]
+    ])
+
+    # Convert steady-state wind vector from NED to body frame
+    wind_body_steady = R.T @ steady_state
+    # Add the gust
+    wind_body = wind_body_steady + gust
+    # Convert total wind to NED frame
+    wind_ned = R @ wind_body
+
+    # Velocity in body frame
+    u, v, w = state[3:6]
+
+    # Velocity vector relative to the airmass in body frame
+    ur = u - wind_body[0]
+    vr = v - wind_body[1]
+    wr = w - wind_body[2]
+
+    # Compute airspeed
+    Va = np.sqrt(ur**2 + vr**2 + wr**2)
+
+    # Compute angle of attack
+    alpha = np.arctan2(wr, ur)
+
+    # Compute sideslip angle
+    beta = np.arcsin(vr / Va)
+
+    return ur, vr, wr, Va, alpha, beta, wind_ned
+
+def forces(state, Va, delta, alpha, beta):
+    delta_a = delta[0]  # aileron
+    delta_e = delta[1]  # elevator
+    delta_r = delta[2]  # rudder
+    delta_t = delta[3]  # throttle
+
+    p, q, r = state[6:9]
+    phi, theta, psi = np.radians(state[9:12])
+
+    # gravitational forces in body frame
+    fg_ned = np.array([0, 0, -mass * gravity])
+    R = np.array([
+        [np.cos(theta) * np.cos(psi), np.cos(theta) * np.sin(psi), -np.sin(theta)],
+        [np.sin(phi) * np.sin(theta) * np.cos(psi) - np.cos(phi) * np.sin(psi), 
+         np.sin(phi) * np.sin(theta) * np.sin(psi) + np.cos(phi) * np.cos(psi), 
+         np.sin(phi) * np.cos(theta)],
+        [np.cos(phi) * np.sin(theta) * np.cos(psi) + np.sin(phi) * np.sin(psi), 
+         np.cos(phi) * np.sin(theta) * np.sin(psi) - np.sin(phi) * np.cos(psi), 
+         np.cos(phi) * np.cos(theta)]])
+    fg_body = R.T @ fg_ned
+    fg_x, fg_y, fg_z = fg_body
+
+    # Compute Lift and Drag coefficients (CL, CD)
+    C_L = C_L_0 + C_L_alpha * alpha
+    C_D = C_D_0 + C_D_alpha * alpha
+
+    # Propeller thrust and torque
+    thrust_prop, _ = motor_thrust_torque(Va, delta_t)
+
+    # Compute longitudinal forces in body frame (fx, fz)
+    fx_fz = 0.5 * rho * Va**2 * S_wing * np.array([
+        (-C_D * np.cos(alpha) + C_L * np.sin(alpha))
+        + (-C_D_q * np.cos(alpha) + C_L_q * np.sin(alpha)) * (c / (2 * Va)) * q
+        + (-C_D_delta_e * np.cos(alpha) + C_L_delta_e * np.sin(alpha)) * delta_e,
+        
+        (-C_D * np.sin(alpha) - C_L * np.cos(alpha))
+        + (-C_D_q * np.sin(alpha) - C_L_q * np.cos(alpha)) * (c / (2 * Va)) * q
+        + (-C_D_delta_e * np.sin(alpha) - C_L_delta_e * np.cos(alpha)) * delta_e])
+
+    f_x = fx_fz[0] + thrust_prop
+    f_z = fx_fz[1]
+
+    # Compute lateral forces in body frame (fy)
+    f_y = 0.5 * rho * Va**2 * S_wing * (C_Y_0 + C_Y_beta * beta
+        + C_Y_p * (b / (2 * Va)) * p
+        + C_Y_r * (b / (2 * Va)) * r
+        + C_Y_delta_a * delta_a
+        + C_Y_delta_r * delta_r)
     
-    north, east, down, u, v, w, p, q, r, phi, theta, pi = state
+    forces = np.array([f_x + fg_x, f_y + fg_y, f_z + fg_z])
+    return forces
+
+def moments(state, delta, Va, alpha, beta):
+    p, q, r = state[6:9]
+
+    delta_a = delta[0]  # aileron
+    delta_e = delta[1]  # elevator
+    delta_r = delta[2]  # rudder
+
+    # Compute longitudinal torque in body frame (My)
+    My = 0.5 * rho * Va**2 * S_wing * c * (
+        C_m_0 + C_m_alpha * alpha
+        + C_m_q * (c / (2 * Va)) * q
+        + C_m_delta_e * delta_e)
+
+    # Compute lateral torques in body frame (Mx, Mz)
+    Mx = 0.5 * rho * Va**2 * S_wing * b * (
+        C_ell_0 + C_ell_beta * beta
+        + C_ell_p * (b / (2 * Va)) * p
+        + C_ell_r * (b / (2 * Va)) * r
+        + C_ell_delta_a * delta_a
+        + C_ell_delta_r * delta_r)
+   
+    Mz = 0.5 * rho * Va**2 * S_wing * b * (
+        C_n_0 + C_n_beta * beta
+        + C_n_p * (b / (2 * Va)) * p
+        + C_n_r * (b / (2 * Va)) * r
+        + C_n_delta_a * delta_a
+        + C_n_delta_r * delta_r)
+
+    moments = np.array([Mx, My, Mz])
+    return moments
+
+def motor_thrust_torque(Va, delta_t):
+    v_in = V_max * delta_t
+
+    a = rho * D_prop**5 / ((2 * np.pi)**2) * C_Q0
+    b = (rho * D_prop**4 / (2 * np.pi)) * C_Q1 * Va + KQ**2 / R_motor
+    c = rho * D_prop**3 * C_Q2 * Va**2 - (KQ * v_in / R_motor) + KQ * i0
+
+    omega_p = (-b + np.sqrt(b**2 - 4 * a * c)) / (2 * a)
+
+    C_T = C_T0 + C_T1 * (2 * np.pi * omega_p / Va) + C_T2 * (2 * np.pi * omega_p / Va)**2
+    thrust_prop = rho * (omega_p / (2 * np.pi))**2 * D_prop**4 * C_T
+
+    C_Q = C_Q0 + C_Q1 * (2 * np.pi * omega_p / Va) + C_Q2 * (2 * np.pi * omega_p / Va)**2
+    torque_prop = rho * (omega_p / (2 * np.pi))**2 * D_prop**5 * C_Q
+
+    return thrust_prop, torque_prop
+
+def equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, forces, moments):
+    north, east, down, u, v, w, p, q, r, phi, theta, psi = state
 
     fx, fy, fz = forces
     Mx, My, Mz = moments
-    
+
     phi = np.radians(phi)
     theta = np.radians(theta)
-    pi = np.radians(pi)
+    psi = np.radians(psi)
 
-    north_dot = np.cos(theta) * np.cos(pi) * u + (np.sin(phi) * np.sin(theta) * np.cos(pi) - np.cos(phi) * np.sin(pi)) * v + (np.cos(phi) * np.sin(theta) * np.cos(pi) + np.sin(phi) * np.sin(pi)) * w
-    east_dot = np.cos(theta) * np.sin(pi) * u + (np.sin(phi) * np.sin(theta) * np.sin(pi) + np.cos(phi) * np.cos(pi)) * v + (np.cos(phi) * np.sin(theta) * np.sin(pi) - np.sin(phi) * np.cos(pi)) * w 
+    north_dot = np.cos(theta) * np.cos(psi) * u + (np.sin(phi) * np.sin(theta) * np.cos(psi) - np.cos(phi) * np.sin(psi)) * v + (np.cos(phi) * np.sin(theta) * np.cos(psi) + np.sin(phi) * np.sin(psi)) * w
+    east_dot = np.cos(theta) * np.sin(psi) * u + (np.sin(phi) * np.sin(theta) * np.sin(psi) + np.cos(phi) * np.cos(psi)) * v + (np.cos(phi) * np.sin(theta) * np.sin(psi) - np.sin(phi) * np.cos(psi)) * w
     down_dot = -np.sin(theta) * u + np.sin(phi) * np.cos(theta) * v + np.cos(phi) * np.cos(theta) * w
 
     u_dot = r * v - q * w + fx / mass
     v_dot = p * w - r * u + fy / mass
     w_dot = q * u - p * v + fz / mass
-    
+
     Gamma1 = (Jxz * (Jx - Jy + Jz)) / (Jx * Jz - Jxz**2)
     Gamma2 = (Jz * (Jz - Jy) + Jxz**2) / (Jx * Jz - Jxz**2)
     Gamma3 = Jz / (Jx * Jz - Jxz**2)
@@ -30,182 +175,67 @@ def equations_of_motion(t, state, mass, Jx, Jy, Jz, Jxz, forces, moments):
     Gamma6 = Jxz / Jy
     Gamma7 = ((Jx - Jy) * Jx + Jxz**2) / (Jx * Jz - Jxz**2)
     Gamma8 = Jx / (Jx * Jz - Jxz**2)
-    
+
     p_dot = Gamma1 * p * q - Gamma2 * q * r + Gamma3 * Mx + Gamma4 * Mz
     q_dot = Gamma5 * p * r - Gamma6 * (p**2 - r**2) + My / Jy
     r_dot = Gamma7 * p * q - Gamma1 * q * r + Gamma4 * Mx + Gamma8 * Mz
 
     phi_dot = p + (q * np.sin(phi) + r * np.cos(phi)) * np.tan(theta)
     theta_dot = q * np.cos(phi) - r * np.sin(phi)
-    pi_dot = (q * np.sin(phi) + r * np.cos(phi)) / np.cos(theta)
+    psi_dot = (q * np.sin(phi) + r * np.cos(phi)) / np.cos(theta)
+
+    return np.array([north_dot, east_dot, down_dot, u_dot, v_dot, w_dot, p_dot, q_dot, r_dot, phi_dot, theta_dot, psi_dot])
+
+def rk4_step(state, dt, mass, Jx, Jy, Jz, Jxz, forces, moments):
+    k1 = equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, forces, moments)
+    k2 = equations_of_motion(state + dt/2 * k1, mass, Jx, Jy, Jz, Jxz, forces, moments)
+    k3 = equations_of_motion(state + dt/2 * k2, mass, Jx, Jy, Jz, Jxz, forces, moments)
+    k4 = equations_of_motion(state + dt * k3, mass, Jx, Jy, Jz, Jxz, forces, moments)
+
+    state_new = state + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
+    return state_new
+
+# Define wind vector (steady-state + gust)
+wind = np.array([[5.0], [0.0], [0.0], [1.0], [0.0], [0.0]])  # Reshaped to (6, 1)
+
+
+# Simulation parameters
+dt = 0.01  
+t_end = 10  
+num_steps = int(t_end / dt)
+time = np.linspace(0, t_end, num_steps)
+
+# Simulation
+states = np.zeros((num_steps, len(initial_state)))
+states[0, :] = initial_state
+
+for i in range(1, num_steps):
+    # Update velocity data with wind
+    ur, vr, wr, Va, alpha, beta, wind_ned = update_velocity_data(states[i-1, :], wind)
     
-    return np.array([north_dot, east_dot, down_dot, u_dot, v_dot, w_dot, p_dot, q_dot, r_dot, phi_dot, theta_dot, pi_dot])
-
-
-def analytic_equations_of_motion(t, state, J1, J2, J3):
-
-    p,q,r = state
-    p_dot = (J1-J3)*q*r/J1
-    q_dot = (J3-J1)*p*r/J1
-    r_dot = 0
+    # Update forces and moments
+    delta = np.array([0, 0, 0, 0.5])  # Example control inputs
+    forces = forces(states[i-1, :], Va, delta, alpha, beta)
+    moments = moments(states[i-1, :], delta, ur, vr, wr, Va, alpha, beta)
     
-    return np.array([p_dot, q_dot, r_dot])
+    # Update state using RK4
+    states[i, :] = rk4_step(states[i-1, :], dt, mass, Jx, Jy, Jz, Jxz, forces, moments)
 
+# Extract simulation results
+north = states[:, 0]
+east = states[:, 1]
+down = states[:, 2]
+u = states[:, 3]
+v = states[:, 4]
+w = states[:, 5]
+p = states[:, 6]
+q = states[:, 7]
+r = states[:, 8]
+phi = states[:, 9]
+theta = states[:, 10]
+psi = states[:, 11]
 
-initial_state = np.array([0, 0, 10, 0, 0, 0, 1, 0, 2, 10, 2, 2])  
-initial_state2 = np.array([1,0,2])
-
-mass = 11  #kg*m^2
-Jx = 1  #kg*m^2
-Jy = 1  #kg*m^2
-Jz = 2  #kg*m^2
-Jxz = 0  #kg*m^2
-forces = np.array([0, 0, -mass*9.81])  # These are example forces
-moments = np.array([0, 0, 0])  # These are example moments
-
-C_L_0 = 0.23
-C_D_0 = 0.0424
-C_m_0 = 0.0135
-C_L_alpha = 5.61
-C_D_alpha = 0.132
-C_m_alpha = -2.74
-C_L_q = 7.95
-C_D_q = 0.0
-C_m_q = -38.21
-C_L_delta_e = 0.13
-C_D_delta_e = 0.0135
-C_m_delta_e = -0.99
-M = 50.0
-alpha0 = 0.47
-epsilon = 0.16
-C_D_p = 0.043
-
-
-C_Y_0 = 0.0
-C_ell_0 = 0.0
-C_n_0 = 0.0
-C_Y_beta = -0.98
-C_ell_beta = -0.13
-C_n_beta = 0.073
-C_Y_p = 0.0
-C_ell_p = -0.51
-C_n_p = 0.069
-C_Y_r = 0.0
-C_ell_r = 0.25
-C_n_r = -0.095
-C_Y_delta_a = 0.075
-C_ell_delta_a = 0.17
-C_n_delta_a = -0.011
-C_Y_delta_r = 0.19
-C_ell_delta_r = 0.0024
-C_n_delta_r = -0.069
-
-rho = 1.2682
-b = 2.8956
-c = 0.18994
-Va = np.sqrt((u**2 + v**2 + w**2))
-S = 
-alpha = atan(w/u)
-beta = asin( v / Va)
-p =  #we output pqr in our og code
-q =
-r = 
-delta_e =
-delta_a =
-delta_r =
-
-def aerodynamic_forces(rho, Va, S, c, b,
-                        C_L_0, C_D_0, 
-                        C_L_alpha, C_D_alpha,
-                        C_L_q, C_D_q,
-                        C_L_delta_e, C_D_delta_e,
-                        C_Y_0, C_Y_beta, C_Y_p, C_Y_r, C_Y_delta_a, C_Y_delta_r,
-                        alpha, beta, p, q, r, delta_e, delta_a, delta_r):
-
-
-    C_L = C_L_0 + C_L_alpha * alpha + C_L_q * (c / (2 * Va)) * q + C_L_delta_e * delta_e
-    C_D = C_D_0 + C_D_alpha * alpha + C_D_q * (c / (2 * Va)) * q + C_D_delta_e * delta_e
-
-    fx_fz = 0.5 * rho * Va**2 * S * np.array([
-        (-C_D * np.cos(alpha) + C_L * np.sin(alpha)) 
-        + (-C_D_q * np.cos(alpha) + C_L_q * np.sin(alpha)) * (c / (2 * Va)) * q
-        + (-C_D_delta_e * np.cos(alpha) + C_L_delta_e * np.sin(alpha)) * delta_e,
-        
-        (-C_D * np.sin(alpha) - C_L * np.cos(alpha)) 
-        + (-C_D_q * np.sin(alpha) - C_L_q * np.cos(alpha)) * (c / (2 * Va)) * q
-        + (-C_D_delta_e * np.sin(alpha) - C_L_delta_e * np.cos(alpha)) * delta_e
-    ])
-
-    f_x, f_z = fx_fz
-
-    f_y = 0.5 * rho * Va**2 * S * (
-        C_Y_0 + C_Y_beta * beta
-        + C_Y_p * (b / (2 * Va)) * p
-        + C_Y_r * (b / (2 * Va)) * r
-        + C_Y_delta_a * delta_a
-        + C_Y_delta_r * delta_r
-    )
-
-    return f_x, f_y, f_z
-
-
-f_x, f_y, f_z = aerodynamic_forces(rho, Va, S, c, b, 
-                                   C_L_0, C_D_0,
-                                   C_L_alpha, C_D_alpha,
-                                   C_L_q, C_D_q,
-                                   C_L_delta_e, C_D_delta_e,
-                                   C_Y_0, C_Y_beta, C_Y_p, C_Y_r, C_Y_delta_a, C_Y_delta_r,
-                                   alpha, beta, p, q, r, delta_e, delta_a, delta_r)
-
-
-
-
-def aerodynamic_moments(rho, Va, S, c, b, 
-                        C_m_0, C_m_alpha, C_m_q, C_m_delta_e, 
-                        C_ell_0, C_ell_beta, C_ell_p, C_ell_r, C_ell_delta_a, C_ell_delta_r, 
-                        C_n_0, C_n_beta, C_n_p, C_n_r, C_n_delta_a, C_n_delta_r, 
-                        alpha, beta, p, q, r, delta_e, delta_a, delta_r):
-    
-    l = 0.5 * rho * Va**2 * S * b * (
-        C_ell_0 + C_ell_beta * beta 
-        + C_ell_p * (b / (2 * Va)) * p 
-        + C_ell_r * (b / (2 * Va)) * r 
-        + C_ell_delta_a * delta_a 
-        + C_ell_delta_r * delta_r
-    )
-
-    m = 0.5 * rho * Va**2 * S * c * (
-        C_m_0 + C_m_alpha * alpha
-        + C_m_q * (c / (2 * Va)) * q
-        + C_m_delta_e * delta_e
-    )
- 
-    n = 0.5 * rho * Va**2 * S * b * (
-        C_n_0 + C_n_beta * beta 
-        + C_n_p * (b / (2 * Va)) * p 
-        + C_n_r * (b / (2 * Va)) * r 
-        + C_n_delta_a * delta_a 
-        + C_n_delta_r * delta_r
-    )
-
-    return l, m, n
-
-l, m, n = aerodynamic_moments(rho, Va, S, c, b,
-                                C_m_0, C_m_alpha, C_m_q, C_m_delta_e,
-                                C_ell_0, C_ell_beta, C_ell_p, C_ell_r, C_ell_delta_a, C_ell_delta_r,
-                                C_n_0, C_n_beta, C_n_p, C_n_r, C_n_delta_a, C_n_delta_r,
-                                alpha, beta, p, q, r, delta_e, delta_a, delta_r)
-
-
-t_span = (0, 10)  
-t_eval = np.linspace(0, 10, 100)  
-
-sim_sol = solve_ivp(equations_of_motion, t_span, initial_state, t_eval=t_eval, args=(mass, Jx, Jy, Jz, Jxz, forces, moments))
-ana_sol = solve_ivp(analytic_equations_of_motion, t_span, initial_state2, t_eval=t_eval, args=(Jx, Jy, Jz))
-
-north,east,down,u,v,w,p,q,r,phi,theta,pi = sim_sol.y
-p_ana, q_ana, r_ana = ana_sol.y
-
+# Plotting
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.plot(north, east, down, label='Aircraft Position')
@@ -216,33 +246,24 @@ ax.set_title('3D Position Projection of Aircraft')
 ax.legend()
 
 plt.figure(figsize=(10, 6))
-plt.plot(sim_sol.t, u, label="u (velocity in x)")
-plt.plot(sim_sol.t, v, label="v (velocity in y)")
-plt.plot(sim_sol.t, w, label="w (velocity in z)")
+plt.plot(time, u, label="u (velocity in x)")
+plt.plot(time, v, label="v (velocity in y)")
+plt.plot(time, w, label="w (velocity in z)")
 plt.xlabel("Time (s)")
 plt.ylabel("Velocity (m/s)")
 plt.legend()
 plt.title("Translational Velocities Over Time")
 plt.grid()
 
-fig,ax = plt.subplots(2, figsize=(11, 8))
-ax[0].plot(sim_sol.t, p, label="p")
-ax[0].plot(sim_sol.t, q, label="q")
-ax[0].plot(sim_sol.t, r, label="r")
+fig, ax = plt.subplots(2, figsize=(11, 8))
+ax[0].plot(time, p, label="p")
+ax[0].plot(time, q, label="q")
+ax[0].plot(time, r, label="r")
 ax[0].set_xlabel("Time (s)")
 ax[0].set_ylabel("Angular Velocity (rad/s)")
 ax[0].legend()
-plt.grid()
+ax[0].set_title("Simulation Rotational Velocities")
+ax[0].grid()
 
-ax[0].set_title("Simiulation Rotational Velocities")
-ax[1].plot(ana_sol.t, p_ana, label="p")
-ax[1].plot(ana_sol.t, q_ana, label="q")
-ax[1].plot(ana_sol.t, r_ana, label="r")
-ax[1].set_xlabel("Time (s)")
-ax[1].set_ylabel("Angular Velocity (rad/s)")
-ax[1].legend()
-ax[1].set_title("Analytical Rotational Velocities")
-plt.grid()
-plt.subplots_adjust(hspace=0.4) 
-
+plt.subplots_adjust(hspace=0.4)
 plt.show()
