@@ -17,22 +17,18 @@ def equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, forces, moments):
     fx, fy, fz = forces
     Mx, My, Mz = moments
 
-    # Convert angles to radians
     phi = np.radians(phi)
     theta = np.radians(theta)
     psi = np.radians(psi)
 
-    # Position kinematics
     north_dot = np.cos(theta) * np.cos(psi) * u + (np.sin(phi) * np.sin(theta) * np.cos(psi) - np.cos(phi) * np.sin(psi)) * v + (np.cos(phi) * np.sin(theta) * np.cos(psi) + np.sin(phi) * np.sin(psi)) * w
     east_dot = np.cos(theta) * np.sin(psi) * u + (np.sin(phi) * np.sin(theta) * np.sin(psi) + np.cos(phi) * np.cos(psi)) * v + (np.cos(phi) * np.sin(theta) * np.sin(psi) - np.sin(phi) * np.cos(psi)) * w
     down_dot = -np.sin(theta) * u + np.sin(phi) * np.cos(theta) * v + np.cos(phi) * np.cos(theta) * w
 
-    # Position dynamics
     u_dot = r * v - q * w + fx / mass
     v_dot = p * w - r * u + fy / mass
     w_dot = q * u - p * v + fz / mass
 
-    # Moments of inertia terms
     Gamma1 = (Jxz * (Jx - Jy + Jz)) / (Jx * Jz - Jxz**2)
     Gamma2 = (Jz * (Jz - Jy) + Jxz**2) / (Jx * Jz - Jxz**2)
     Gamma3 = Jz / (Jx * Jz - Jxz**2)
@@ -42,12 +38,10 @@ def equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, forces, moments):
     Gamma7 = ((Jx - Jy) * Jx + Jxz**2) / (Jx * Jz - Jxz**2)
     Gamma8 = Jx / (Jx * Jz - Jxz**2)
 
-    # Rotational dynamics
     p_dot = Gamma1 * p * q - Gamma2 * q * r + Gamma3 * Mx + Gamma4 * Mz
     q_dot = Gamma5 * p * r - Gamma6 * (p**2 - r**2) + My / Jy
     r_dot = Gamma7 * p * q - Gamma1 * q * r + Gamma4 * Mx + Gamma8 * Mz
 
-    # Rotational kinematics
     phi_dot = p + (q * np.sin(phi) + r * np.cos(phi)) * np.tan(theta)
     theta_dot = q * np.cos(phi) - r * np.sin(phi)
     psi_dot = (q * np.sin(phi) + r * np.cos(phi)) / np.cos(theta)
@@ -56,14 +50,15 @@ def equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, forces, moments):
 
 def analytic_equations_of_motion(state, J1, J2, J3):
 
-    p, q, r = state
+    p,q,r = state
 
-    p_dot = (J2 - J3) / J1 * q * r
-    q_dot = (J3 - J1) / J2 * p * r
+    p_dot = (J1-J3)*q*r/J1
+    q_dot = (J3-J1)*p*r/J1
     r_dot = 0
 
     return np.array([p_dot, q_dot, r_dot])
 
+# solving EOMs using RK4 method
 def rk4_step(state, dt, mass, Jx, Jy, Jz, Jxz, forces, moments):
     k1 = equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, forces, moments)
     k2 = equations_of_motion(state + dt/2 * k1, mass, Jx, Jy, Jz, Jxz, forces, moments)
@@ -82,24 +77,22 @@ def rk4_step_analytic(state, dt, J1, J2, J3):
     state_new = state + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
     return state_new
 
-
 initial_state = np.array([0, 0, 10, 0, 0, 0, 1, 0, 2, 10, 2, 2])  # [north, east, down, u, v, w, p, q, r, phi, theta, psi]
 initial_state2 = np.array([1, 0, 2])  # [p, q, r]
 
-# Simulation parameters
 dt = 0.01  
 t_end = 10  
 num_steps = int(t_end / dt)
 time = np.linspace(0, t_end, num_steps)
 
-# Arrays to store results
+# simulation
 states = np.zeros((num_steps, len(initial_state)))
 states[0, :] = initial_state
 
 for i in range(1, num_steps):
     states[i, :] = rk4_step(states[i-1, :], dt, mass, Jx, Jy, Jz, Jxz, forces, moments)
 
-# Extract results
+# extract simulation results
 north = states[:, 0]
 east = states[:, 1]
 down = states[:, 2]
@@ -113,12 +106,14 @@ phi = states[:, 9]
 theta = states[:, 10]
 psi = states[:, 11]
 
+# analytical solution
 states_analytic = np.zeros((num_steps, len(initial_state2)))
 states_analytic[0, :] = initial_state2
 
 for i in range(1, num_steps):
     states_analytic[i, :] = rk4_step_analytic(states_analytic[i-1, :], dt, Jx, Jy, Jz)
 
+# extract analytical results
 p_ana = states_analytic[:, 0]
 q_ana = states_analytic[:, 1]
 r_ana = states_analytic[:, 2]
