@@ -3,8 +3,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from aerosonde_parameters import *
 
-# Initial state
 initial_state = np.array([0, 0, 10, 0, 0, 0, 1, 0, 2, 10, 2, 2])  # [north, east, down, u, v, w, p, q, r, phi, theta, psi]
+wind = np.array([[5.0], [0.0], [0.0], [1.0], [0.0], [0.0]])  # example wind vector (steady-state + gust)
+delta = np.array([0, 0, 0, 0.5])  # example control inputs
 
 def update_velocity_data(state, wind=np.zeros((6, 1))):
     steady_state = wind[0:3]  # in NED
@@ -23,38 +24,35 @@ def update_velocity_data(state, wind=np.zeros((6, 1))):
          np.cos(phi) * np.cos(theta)]
     ])
 
-    # Convert steady-state wind vector from NED to body frame
+    # convert steady-state wind vector from NED to body frame
     wind_body_steady = R.T @ steady_state
-    # Add the gust
+    # add the gust
     wind_body = wind_body_steady + gust
     # Convert total wind to NED frame
     wind_ned = R @ wind_body
 
-    # Velocity in body frame
+    # velocity in body frame
     u, v, w = state[3:6]
 
-    # Velocity vector relative to the airmass in body frame
+    # velocity vector relative to the airmass in body frame
     ur = u - wind_body[0]
     vr = v - wind_body[1]
     wr = w - wind_body[2]
 
-    # Compute airspeed
+    # compute airspeed, angle of attack, sideslip angle
     Va = np.sqrt(ur**2 + vr**2 + wr**2)
-
-    # Compute angle of attack
     alpha = np.arctan2(wr, ur)
-
-    # Compute sideslip angle
     beta = np.arcsin(vr / Va)
 
     return ur, vr, wr, Va, alpha, beta, wind_ned
 
-def forces(state, Va, delta, alpha, beta):
+def calculate_forces(state, Va, delta, alpha, beta):
     delta_a = delta[0]  # aileron
     delta_e = delta[1]  # elevator
     delta_r = delta[2]  # rudder
     delta_t = delta[3]  # throttle
 
+    # extract states (phi, theta, psi, p, q, r)
     p, q, r = state[6:9]
     phi, theta, psi = np.radians(state[9:12])
 
@@ -75,9 +73,6 @@ def forces(state, Va, delta, alpha, beta):
     C_L = C_L_0 + C_L_alpha * alpha
     C_D = C_D_0 + C_D_alpha * alpha
 
-    # Propeller thrust and torque
-    thrust_prop, _ = motor_thrust_torque(Va, delta_t)
-
     # Compute longitudinal forces in body frame (fx, fz)
     fx_fz = 0.5 * rho * Va**2 * S_wing * np.array([
         (-C_D * np.cos(alpha) + C_L * np.sin(alpha))
@@ -88,7 +83,7 @@ def forces(state, Va, delta, alpha, beta):
         + (-C_D_q * np.sin(alpha) - C_L_q * np.cos(alpha)) * (c / (2 * Va)) * q
         + (-C_D_delta_e * np.sin(alpha) - C_L_delta_e * np.cos(alpha)) * delta_e])
 
-    f_x = fx_fz[0] + thrust_prop
+    f_x = fx_fz[0] 
     f_z = fx_fz[1]
 
     # Compute lateral forces in body frame (fy)
@@ -101,7 +96,8 @@ def forces(state, Va, delta, alpha, beta):
     forces = np.array([f_x + fg_x, f_y + fg_y, f_z + fg_z])
     return forces
 
-def moments(state, delta, Va, alpha, beta):
+
+def calculate_moments(state, delta, Va, alpha, beta):
     p, q, r = state[6:9]
 
     delta_a = delta[0]  # aileron
@@ -132,29 +128,13 @@ def moments(state, delta, Va, alpha, beta):
     moments = np.array([Mx, My, Mz])
     return moments
 
-def motor_thrust_torque(Va, delta_t):
-    v_in = V_max * delta_t
-
-    a = rho * D_prop**5 / ((2 * np.pi)**2) * C_Q0
-    b = (rho * D_prop**4 / (2 * np.pi)) * C_Q1 * Va + KQ**2 / R_motor
-    c = rho * D_prop**3 * C_Q2 * Va**2 - (KQ * v_in / R_motor) + KQ * i0
-
-    omega_p = (-b + np.sqrt(b**2 - 4 * a * c)) / (2 * a)
-
-    C_T = C_T0 + C_T1 * (2 * np.pi * omega_p / Va) + C_T2 * (2 * np.pi * omega_p / Va)**2
-    thrust_prop = rho * (omega_p / (2 * np.pi))**2 * D_prop**4 * C_T
-
-    C_Q = C_Q0 + C_Q1 * (2 * np.pi * omega_p / Va) + C_Q2 * (2 * np.pi * omega_p / Va)**2
-    torque_prop = rho * (omega_p / (2 * np.pi))**2 * D_prop**5 * C_Q
-
-    return thrust_prop, torque_prop
-
-def equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, forces, moments):
+def equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, delta, wind, alpha, beta, Va):
     north, east, down, u, v, w, p, q, r, phi, theta, psi = state
+    ur, vr, wr, _, _, _, wind_ned = update_velocity_data(state, wind)
+    f_x_total, f_y_total, f_z_total = calculate_forces(state, Va, delta, alpha, beta)
+    Mx, My, Mz = calculate_moments(state, delta, Va, alpha, beta)
 
-    fx, fy, fz = forces
-    Mx, My, Mz = moments
-
+    
     phi = np.radians(phi)
     theta = np.radians(theta)
     psi = np.radians(psi)
@@ -163,9 +143,9 @@ def equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, forces, moments):
     east_dot = np.cos(theta) * np.sin(psi) * u + (np.sin(phi) * np.sin(theta) * np.sin(psi) + np.cos(phi) * np.cos(psi)) * v + (np.cos(phi) * np.sin(theta) * np.sin(psi) - np.sin(phi) * np.cos(psi)) * w
     down_dot = -np.sin(theta) * u + np.sin(phi) * np.cos(theta) * v + np.cos(phi) * np.cos(theta) * w
 
-    u_dot = r * v - q * w + fx / mass
-    v_dot = p * w - r * u + fy / mass
-    w_dot = q * u - p * v + fz / mass
+    u_dot = r * v - q * w + f_x_total / mass
+    v_dot = p * w - r * u + f_y_total / mass
+    w_dot = q * u - p * v + f_z_total / mass
 
     Gamma1 = (Jxz * (Jx - Jy + Jz)) / (Jx * Jz - Jxz**2)
     Gamma2 = (Jz * (Jz - Jy) + Jxz**2) / (Jx * Jz - Jxz**2)
@@ -186,18 +166,14 @@ def equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, forces, moments):
 
     return np.array([north_dot, east_dot, down_dot, u_dot, v_dot, w_dot, p_dot, q_dot, r_dot, phi_dot, theta_dot, psi_dot])
 
-def rk4_step(state, dt, mass, Jx, Jy, Jz, Jxz, forces, moments):
-    k1 = equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, forces, moments)
-    k2 = equations_of_motion(state + dt/2 * k1, mass, Jx, Jy, Jz, Jxz, forces, moments)
-    k3 = equations_of_motion(state + dt/2 * k2, mass, Jx, Jy, Jz, Jxz, forces, moments)
-    k4 = equations_of_motion(state + dt * k3, mass, Jx, Jy, Jz, Jxz, forces, moments)
+def rk4_step(state, dt, mass, Jx, Jy, Jz, Jxz, delta, wind, alpha, beta, Va):
+    k1 = equations_of_motion(state, mass, Jx, Jy, Jz, Jxz, delta, wind, alpha, beta, Va)
+    k2 = equations_of_motion(state + dt/2 * k1, mass, Jx, Jy, Jz, Jxz, delta, wind, alpha, beta, Va)
+    k3 = equations_of_motion(state + dt/2 * k2, mass, Jx, Jy, Jz, Jxz, delta, wind, alpha, beta, Va)
+    k4 = equations_of_motion(state + dt * k3, mass, Jx, Jy, Jz, Jxz, delta, wind, alpha, beta, Va)
 
     state_new = state + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
     return state_new
-
-# Define wind vector (steady-state + gust)
-wind = np.array([[5.0], [0.0], [0.0], [1.0], [0.0], [0.0]])  # Reshaped to (6, 1)
-
 
 # Simulation parameters
 dt = 0.01  
@@ -209,17 +185,16 @@ time = np.linspace(0, t_end, num_steps)
 states = np.zeros((num_steps, len(initial_state)))
 states[0, :] = initial_state
 
+# Compute initial alpha, beta, and Va
+ur, vr, wr, Va, alpha, beta, wind_ned = update_velocity_data(initial_state, wind)
+
 for i in range(1, num_steps):
-    # Update velocity data with wind
-    ur, vr, wr, Va, alpha, beta, wind_ned = update_velocity_data(states[i-1, :], wind)
-    
-    # Update forces and moments
-    delta = np.array([0, 0, 0, 0.5])  # Example control inputs
-    forces = forces(states[i-1, :], Va, delta, alpha, beta)
-    moments = moments(states[i-1, :], delta, ur, vr, wr, Va, alpha, beta)
-    
     # Update state using RK4
-    states[i, :] = rk4_step(states[i-1, :], dt, mass, Jx, Jy, Jz, Jxz, forces, moments)
+    states[i, :] = rk4_step(states[i-1, :], dt, mass, Jx, Jy, Jz, Jxz, delta, wind, alpha, beta, Va)
+    
+    # Recompute alpha, beta, and Va for the next time step
+    ur, vr, wr, Va, alpha, beta, wind_ned = update_velocity_data(states[i, :], wind)
+
 
 # Extract simulation results
 north = states[:, 0]
@@ -234,6 +209,31 @@ r = states[:, 8]
 phi = states[:, 9]
 theta = states[:, 10]
 psi = states[:, 11]
+
+
+"""
+def _motor_thrust_torque(self, Va, delta_t):
+        # compute thrust and torque due to propeller
+        # map delta_t throttle command(0 to 1) into motor input voltage
+        v_in = V_max * delta_t
+
+        # Angular speed of propeller (omega_p = ?)
+        a = rho * D_prop**5 / ((2 * np.pi)**2) * C_Q0
+        b = (rho * D_prop**4 / (2 * np.pi)) * C_Q1 * Va + KQ**2 / R_motor
+        c = rho * D_prop**3 * C_Q2 * Va**2 - (KQ * v_in / R_motor) + KQ * i0
+
+        omega_p = (-b + np.sqrt(b**2 - 4 * a * c)) / (2 * a)
+
+        # thrust and torque due to propeller
+        C_T = C_T0 + C_T1 * (2 * np.pi * omega_p / Va) + C_T2 * (2 * np.pi * omega_p / Va)**2
+        thrust_prop = rho * (omega_p / (2 * np.pi))**2 * D_prop**4 * C_T
+
+        C_Q = C_Q0 + C_Q1 * (2 * np.pi * omega_p / Va) + C_Q2 * (2 * np.pi * omega_p / Va)**2
+        torque_prop = rho * (omega_p / (2 * np.pi))**2 * D_prop**5 * C_Q
+
+        return thrust_prop, torque_prop
+"""
+
 
 # Plotting
 fig = plt.figure()
