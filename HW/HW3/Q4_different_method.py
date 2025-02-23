@@ -155,7 +155,7 @@ ax[1].set_xlabel("Time (s)")
 ax[1].set_ylabel("Angular Velocity (rad/s)")
 ax[1].legend()
 ax[1].set_title("Analytical Rotational Velocities")
-plt.grid()
+ax[1].grid()
 
 plt.subplots_adjust(hspace=0.4)
 plt.show()
