@@ -190,7 +190,7 @@ axes[1].set_zlabel('Down (m)')
 axes[1].set_title("With Wind")
 axes[1].legend()
 
-plt.suptitle("Comparison of Aircraft Motion With and Without Wind", fontsize=16)
+plt.suptitle(r"Aircraft Trajectory (u=10, $\theta$ = 5°)", fontsize=16)
 
 plt.tight_layout()
 plt.show()
