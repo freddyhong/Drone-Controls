@@ -106,8 +106,6 @@ class MAV:
         # Lateral force (fy)
         fy = side_force
 
-        # Add thrust (from throttle)
-        fx += delta.throttle * 50.0
 
         # Add gravitational forces
         fg_ned = np.array([0, 0, self.mass * par.gravitational_acceleration])
