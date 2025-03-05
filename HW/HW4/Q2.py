@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -44,6 +43,7 @@ class MAV:
         k4 = f(self.state + self.ts * k3, forces, moments)
 
         self.state = self.state + (self.ts / 6) * (k1 + 2*k2 + 2*k3 + k4)
+        self._update_velocity_data(delta)
 
         # Debug output
         print(f"--- Simulation Step ---")
@@ -57,6 +57,9 @@ class MAV:
         print(f"Beta (Sideslip Angle): {self.beta}")
         print("----------------------\n")
     
+    def _update_velocity_data(self, delta):
+        self.compute_forces_moments(delta, wind_enabled=True)
+
     def equations_of_motion(self, state, forces, moments):
         u, v, w = state[3], state[4], state[5]  # Velocity in body frame
         phi, theta, psi = state[6], state[7], state[8]  # Euler angles
@@ -95,7 +98,7 @@ class MAV:
         psi_dot = (q * np.sin(phi) + r * np.cos(phi)) / np.cos(theta)
 
         return np.array([north_dot, east_dot, down_dot, u_dot, v_dot, w_dot, phi_dot, theta_dot, psi_dot, p_dot, q_dot, r_dot])
-    
+
     def compute_forces_moments(self, delta, wind_enabled=True):
         if wind_enabled:
             wind_ned = self.wind.get_wind()
