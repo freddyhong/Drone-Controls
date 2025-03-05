@@ -154,26 +154,12 @@ class MAV:
             + par.C_Y_delta_r * delta.rudder
             )
 
-        # # Compute forces in body frame w/o states
-
-        # q_bar = 0.5 * par.rho * self.Va**2 * par.S_wing  # Dynamic pressure
-        # lift = q_bar * CL
-        # drag = q_bar * CD
-        # side_force = q_bar * CY
-
-        # # Longitudinal forces (fx, fz)
-        # fx = -drag * np.cos(self.alpha) + lift * np.sin(self.alpha)
-        # fz = -drag * np.sin(self.alpha) - lift * np.cos(self.alpha)
-
-        # # Lateral force (fy)
-        # fy = side_force
-
-        # # add gravitational forces
-        # fg_ned = np.array([0, 0, self.mass * par.gravitational_acceleration])
-        # fg_body = R.T @ fg_ned
-        # fx += fg_body[0]
-        # fy += fg_body[1]
-        # fz += fg_body[2]
+        # add gravitational forces
+        fg_ned = np.array([0, 0, self.mass * par.gravitational_acceleration])
+        fg_body = R.T @ fg_ned
+        fx += fg_body[0]
+        fy += fg_body[1]
+        fz += fg_body[2]
 
 
         # Compute moments

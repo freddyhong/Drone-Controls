@@ -54,13 +54,7 @@ def compute_trim(mav, Va, gamma):
             x[9],  # p = 0 
             x[10], # q = 0 
             x[11],  # r = 0 
-        ])},
-        # for level flight w and theta (pitch angle) should be small & positive
-        # use inequality constraints on pitch and vertical veolcity
-        {'type': 'ineq', 'fun': lambda x: np.radians(5) - x[7]},  # Ensure θ ≤ 5°
-        {'type': 'ineq', 'fun': lambda x: x[7] - np.radians(2)},   # Ensure θ ≥ 2°
-        {'type': 'ineq', 'fun': lambda x: 0.1 - x[5]},  # Ensure w ≤ 0.1
-        {'type': 'ineq', 'fun': lambda x: x[5] + 0.2},  # Ensure w ≥ -0.2
+        ])}
     ]
 
     # solve the minimization problem to find the trim states and inputs
