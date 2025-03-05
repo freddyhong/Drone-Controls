@@ -1,5 +1,5 @@
 import numpy as np
-from Q2 import MAV  
+from mav_model import MAV  
 import parameters as par
 from compute_trim import compute_trim
 

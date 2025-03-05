@@ -1,7 +1,5 @@
 import numpy as np
 from scipy.optimize import minimize
-from Q2 import MAV  
-import parameters as par
 
 class MsgDelta:
     def __init__(self, elevator=0.0, aileron=0.0, rudder=0.0, throttle=0.5):
