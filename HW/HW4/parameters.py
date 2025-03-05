@@ -1,3 +1,5 @@
+import numpy as np
+
 mass = 11.0
 Jx = 0.8244
 Jy = 1.135
@@ -11,7 +13,7 @@ gravitational_acceleration = 9.81
 
 # Wind parameters
 steady_wind = [5.0, 0.0, 0.0]  # Steady wind in NED frame (m/s)
-gust_amplitude = [1.0, 1.0, 1.0]  # Maximum wind gust magnitude (m/s)
+gust_amplitude = np.array([1.0, 1.0, 1.0])  # Maximum wind gust magnitude (m/s)
 
 def generate_wind_gust():
     import numpy as np
@@ -20,6 +22,7 @@ def generate_wind_gust():
 # Aerodynamic parameters
 rho = 1.2682  # Air density (kg/m^3)
 S_wing = 0.55  # Wing surface area (m^2)
+b = 2.8956  # Wing span (m)
 c = 0.18994  # Mean aerodynamic chord (m)
 AR = 15.0  # Aspect ratio of the wing
 
