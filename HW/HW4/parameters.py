@@ -73,4 +73,3 @@ initial_state = [
     0.0,  # q (pitch rate, rad/s)
     0.0   # r (yaw rate, rad/s)
 ]
-
