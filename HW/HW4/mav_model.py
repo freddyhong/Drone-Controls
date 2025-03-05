@@ -210,43 +210,58 @@ sim_time = par.start_time
 # Store positions for both cases
 positions_with_wind = []
 positions_without_wind = []
+positions_without_trim = []
 velocities_with_wind = []
+velocities_without_trim = []
 velocities_without_wind = []
 angular_velocities_with_wind = []
+angular_velocities_without_trim = []
 angular_velocities_without_wind = []
 times = []
 
 mav_with_wind = MAV(par.ts_simulation, par.mass, par.Jx, par.Jy, par.Jz, par.Jxz, par.initial_state)
+mav_without_trim = MAV(par.ts_simulation, par.mass, par.Jx, par.Jy, par.Jz, par.Jxz, par.initial_state)
 mav_without_wind = MAV(par.ts_simulation, par.mass, par.Jx, par.Jy, par.Jz, par.Jxz, par.initial_state)
 
 delta = lambda: None
+delta2 = lambda: None
 delta.elevator, delta.aileron, delta.rudder, delta.throttle = -0.2, 0.0, 0.005, 0.5
+# delta.elevator, delta.aileron, delta.rudder, delta.throttle = par.initial_delta
+delta2.elevator, delta2.aileron, delta2.rudder, delta2.throttle = 0, 0, 0, 0
 
 while sim_time < par.end_time:
     mav_with_wind.update(delta, wind_enabled=True)
+    mav_without_trim.update(delta2,wind_enabled=True)
     mav_without_wind.update(delta, wind_enabled=False)
 
     positions_with_wind.append(mav_with_wind.state[:3])
+    positions_without_trim.append(mav_without_trim.state[:3])
     positions_without_wind.append(mav_without_wind.state[:3])
     velocities_with_wind.append(mav_with_wind.state[3:6])
+    velocities_without_trim.append(mav_without_trim.state[3:6])
     velocities_without_wind.append(mav_without_wind.state[3:6])
     angular_velocities_with_wind.append(mav_with_wind.state[9:12])
+    angular_velocities_without_trim.append(mav_without_trim.state[9:12])
     angular_velocities_without_wind.append(mav_without_wind.state[9:12])
     times.append(sim_time)
     sim_time += par.ts_simulation
 
 positions_with_wind = np.array(positions_with_wind)
+positions_without_trim = np.array(positions_without_trim)
 positions_without_wind = np.array(positions_without_wind)
 velocities_with_wind = np.array(velocities_with_wind)
+velocities_without_trim = np.array(velocities_without_trim)
 velocities_without_wind = np.array(velocities_without_wind)
 angular_velocities_with_wind = np.array(angular_velocities_with_wind)
+ancular_velocities_without_trim = np.array(angular_velocities_without_trim)
 angular_velocities_without_wind = np.array(angular_velocities_without_wind)
 
 # Plotting
 # 3D Position
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(positions_with_wind[:, 0], positions_with_wind[:, 1], positions_with_wind[:, 2], label='With Wind')
+ax.plot(positions_with_wind[:, 0], positions_with_wind[:, 1], positions_with_wind[:, 2], label='With Trim')
+ax.plot(positions_without_trim[:, 0], positions_without_trim[:, 1], positions_without_trim[:, 2], label='Without Trim')
 ax.plot(positions_without_wind[:, 0], positions_without_wind[:, 1], positions_without_wind[:, 2], label='Without Wind', linestyle='dashed')
 ax.set_xlabel('North')
 ax.set_ylabel('East')
@@ -256,11 +271,16 @@ plt.show()
 
 # Velocities (u, v, w)
 plt.figure()
-plt.plot(times, velocities_with_wind[:, 0], label='u with Wind')
+plt.plot(times, velocities_with_wind[:, 0], label='u with Trim')
+plt.plot(times, velocities_without_trim[:, 0], label='u Without Trim')
 plt.plot(times, velocities_without_wind[:, 0], label='u without Wind', linestyle='dashed')
-plt.plot(times, velocities_with_wind[:, 1], label='v with Wind')
+
+plt.plot(times, velocities_with_wind[:, 1], label='v with Trim')
+plt.plot(times, velocities_without_trim[:, 1], label='v Without Trim')
 plt.plot(times, velocities_without_wind[:, 1], label='v without Wind', linestyle='dashed')
+
 plt.plot(times, velocities_with_wind[:, 2], label='w with Wind')
+plt.plot(times, velocities_without_trim[:, 2], label='w Without Trim')
 plt.plot(times, velocities_without_wind[:, 2], label='w without Wind', linestyle='dashed')
 plt.xlabel('Time')
 plt.ylabel('Velocity')

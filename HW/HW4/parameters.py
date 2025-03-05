@@ -73,3 +73,10 @@ initial_state = [
     0.0,  # q (pitch rate, rad/s)
     0.0   # r (yaw rate, rad/s)
 ]
+
+initial_delta = [
+    -0.02,  # elevator
+    0.001,  # aileron
+    0.001,  # rudder
+    0.5     # throttle
+]

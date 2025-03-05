@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
+import parameters as par
 
 class MsgDelta:
     def __init__(self, elevator=0.0, aileron=0.0, rudder=0.0, throttle=0.5):
@@ -15,32 +16,34 @@ class MsgDelta:
 def compute_trim(mav, Va, gamma):
 
     # set the initial conditions of the optimization
-    phi0 = 0.0  
-    theta0 = gamma  # level flight should have small pitch angle
-    psi0 = 0.0  
+    # phi0 = 0.0  
+    # theta0 = gamma  # level flight should have small pitch angle
+    # psi0 = 0.0  
 
-    state0 = np.array([
-        0,  # pn 
-        0,  # pe 
-        -100,  # pd 
-        Va, # u (forward velocity)
-        0,  # v (no side velocity)
-        0., # w (no vertical velocity)
-        phi0,  
-        theta0,  
-        psi0,  
-        0,  # p (roll rate)
-        0,  # q (pitch rate)
-        0   # r (yaw rate)
-    ])
+    state0 = par.initial_state
+    # state0 = np.array([
+    #     0,  # pn 
+    #     0,  # pe 
+    #     -100,  # pd 
+    #     Va, # u (forward velocity)
+    #     0,  # v (no side velocity)
+    #     0., # w (no vertical velocity)
+    #     phi0,  
+    #     theta0,  
+    #     psi0,  
+    #     0,  # p (roll rate)
+    #     0,  # q (pitch rate)
+    #     0   # r (yaw rate)
+    # ])
 
     # initial guess for control inputs (delta)
-    delta0 = np.array([
-        -0.02,  # elevator
-        0.001,  # aileron
-        0.001,  # rudder
-        0.5     # throttle
-    ])
+    delta0 = par.initial_delta
+    # delta0 = np.array([
+    #     -0.02,  # elevator
+    #     0.001,  # aileron
+    #     0.001,  # rudder
+    #     0.5     # throttle
+    # ])
 
     x0 = np.concatenate((state0, delta0), axis=0)
 
@@ -79,7 +82,6 @@ def trim_objective_fun(x, mav, Va, gamma):
 
     state = x[:12]
     delta = MsgDelta(elevator=x[12], aileron=x[13], rudder=x[14], throttle=x[15])
-
     # Desired steady flight conditions
     desired_trim_state_dot = np.array([
         0, 0, -Va * np.sin(gamma),  # pn, pe, climb rate constant h
