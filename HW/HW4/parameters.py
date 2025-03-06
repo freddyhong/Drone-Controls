@@ -5,7 +5,7 @@ Jx = 0.8244
 Jy = 1.135
 Jz = 1.759
 Jxz = 0.1204
-ts_simulation = 0.01
+ts_simulation = 0.005
 start_time = 0.0
 end_time = 10.0
 
@@ -13,7 +13,7 @@ gravitational_acceleration = 9.81
 
 # Wind parameters
 steady_wind = [5.0, 0.0, 0.0]  # Steady wind in NED frame (m/s)
-gust_amplitude = np.array([1.0, 1.0, 1.0])  # Maximum wind gust magnitude (m/s)
+gust_amplitude = np.array([0, 0, 0])  # Maximum wind gust magnitude (m/s)
 
 def generate_wind_gust():
     import numpy as np
@@ -75,8 +75,8 @@ initial_state = [
 ]
 
 initial_delta = [
-    -0.02,  # elevator
-    0.001,  # aileron
-    0.001,  # rudder
+    -0.2,  # elevator
+    0.0,  # aileron
+    0.005,  # rudder
     0.5     # throttle
 ]

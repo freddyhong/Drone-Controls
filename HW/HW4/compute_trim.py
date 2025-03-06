@@ -3,7 +3,7 @@ from scipy.optimize import minimize
 import parameters as par
 
 class MsgDelta:
-    def __init__(self, elevator=0.0, aileron=0.0, rudder=0.0, throttle=0.5):
+    def __init__(self, elevator=-0.2, aileron=0.0, rudder=0.005, throttle=0.5):
         self.elevator = elevator 
         self.aileron = aileron  
         self.rudder = rudder  
@@ -21,47 +21,29 @@ def compute_trim(mav, Va, gamma):
     # psi0 = 0.0  
 
     state0 = par.initial_state
-    # state0 = np.array([
-    #     0,  # pn 
-    #     0,  # pe 
-    #     -100,  # pd 
-    #     Va, # u (forward velocity)
-    #     0,  # v (no side velocity)
-    #     0., # w (no vertical velocity)
-    #     phi0,  
-    #     theta0,  
-    #     psi0,  
-    #     0,  # p (roll rate)
-    #     0,  # q (pitch rate)
-    #     0   # r (yaw rate)
-    # ])
 
     # initial guess for control inputs (delta)
     delta0 = par.initial_delta
-    # delta0 = np.array([
-    #     -0.02,  # elevator
-    #     0.001,  # aileron
-    #     0.001,  # rudder
-    #     0.5     # throttle
-    # ])
 
     x0 = np.concatenate((state0, delta0), axis=0)
 
+    # have to do sth with this fkcing constrain
     cons = [
         {'type': 'eq',
         'fun': lambda x: np.array([
             x[3]**2 + x[4]**2 + x[5]**2 - Va**2,  # Velocity magnitude = Va
             x[4],  # v = 0 (no sideslip)
-            x[6],  # no roll psi
-            x[8],  # no yaw theta
-            x[9],  # p = 0 
-            x[10], # q = 0 
-            x[11],  # r = 0 
+            # x[6],  # no roll (phi = 0)
+            # x[7],  # no pitch (theta = 0)
+            # x[8],  # no yaw (psi = 0)
+            x[9],  # p = 0 (no roll rate)
+            x[10], # q = 0 (no pitch rate)
+            x[11], # r = 0 (no yaw rate)
         ])}
     ]
 
     # solve the minimization problem to find the trim states and inputs
-    res = minimize(trim_objective_fun, x0, method='SLSQP', args=(mav, Va, gamma), constraints=cons, options={'ftol': 1e-10, 'disp': True})
+    res = minimize(trim_objective_fun, x0, method='SLSQP', args=(mav, Va, gamma), constraints=cons, options={'disp': False})
 
     # extract trim state and input
     trim_state = res.x[0:12].reshape((12, 1))
@@ -95,10 +77,13 @@ def trim_objective_fun(x, mav, Va, gamma):
     mav._update_velocity_data(delta)
     forces, moments = mav.compute_forces_moments(delta, wind_enabled=False)  # no wind for trim for steady flight
     f = mav.equations_of_motion(state, forces, moments)
-
+    
     # Compute cost function J (minimizing error in state derivatives)
     tmp = desired_trim_state_dot - f
     J = np.linalg.norm(tmp[2:12])**2  # ignore first two position derivatives
+    # print("Forces at trim:", forces)
+    # print("Moments at trim:", moments)
+    # print("Final cost J:", J)
 
     return J
 
