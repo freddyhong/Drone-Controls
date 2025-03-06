@@ -95,16 +95,34 @@ angular_velocities_trim_no_wind = np.array(angular_velocities_trim_no_wind)
 
 # Plotting
 # 3D Position
+# 3D Position Plot
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
+
+# Plot the three flight scenarios
 ax.plot(positions_with_wind[:, 0], positions_with_wind[:, 1], positions_with_wind[:, 2], label='With Trim and Wind')
 ax.plot(positions_without_wind[:, 0], positions_without_wind[:, 1], positions_without_wind[:, 2], label='Without Wind and Trim', linestyle='dashed')
 ax.plot(positions_trim_no_wind[:, 0], positions_trim_no_wind[:, 1], positions_trim_no_wind[:, 2], label='With Trim and No Wind', linestyle='dotted')
+
+# Set axis labels
 ax.set_xlabel('North')
 ax.set_ylabel('East')
 ax.set_zlabel('Altitude')
+
+# Check if East values are too small
+east_min = min(positions_with_wind[:, 1].min(), positions_without_wind[:, 1].min(), positions_trim_no_wind[:, 1].min())
+east_max = max(positions_with_wind[:, 1].max(), positions_without_wind[:, 1].max(), positions_trim_no_wind[:, 1].max())
+
+if abs(east_max) < 1e-2 and abs(east_min) < 1e-2:  # If all values are near zero
+    ax.set_ylim(-10, 10)  # Force reasonable limits
+else:
+    buffer = 0.1 * (east_max - east_min)  # Add a buffer for visualization
+    ax.set_ylim(east_min - buffer, east_max + buffer)
+
+# Add legend and show plot
 ax.legend()
 plt.show()
+
 
 # Velocities (u, v, w)
 plt.figure()
