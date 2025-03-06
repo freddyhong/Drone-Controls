@@ -14,17 +14,8 @@ class MsgDelta:
 
 
 def compute_trim(mav, Va, gamma):
-
-    # set the initial conditions of the optimization
-    # phi0 = 0.0  
-    # theta0 = gamma  # level flight should have small pitch angle
-    # psi0 = 0.0  
-
     state0 = par.initial_state
-
-    # initial guess for control inputs (delta)
     delta0 = par.initial_delta
-
     x0 = np.concatenate((state0, delta0), axis=0)
 
     # have to do sth with this fkcing constrain
@@ -33,17 +24,20 @@ def compute_trim(mav, Va, gamma):
         'fun': lambda x: np.array([
             x[3]**2 + x[4]**2 + x[5]**2 - Va**2,  # Velocity magnitude = Va
             x[4],  # v = 0 (no sideslip)
-            # x[6],  # no roll (phi = 0)
-            # x[7],  # no pitch (theta = 0)
-            # x[8],  # no yaw (psi = 0)
+            x[6],  # no roll (phi = 0)
+            #x[7],  # no pitch (theta = 0)
+            x[8],  # no yaw (psi = 0)
             x[9],  # p = 0 (no roll rate)
             x[10], # q = 0 (no pitch rate)
             x[11], # r = 0 (no yaw rate)
         ])}
     ]
+    
+    
 
     # solve the minimization problem to find the trim states and inputs
-    res = minimize(trim_objective_fun, x0, method='SLSQP', args=(mav, Va, gamma), constraints=cons, options={'disp': False})
+    res = minimize(trim_objective_fun, x0, method='SLSQP', args=(mav, Va, gamma), constraints=cons, options={'maxiter': 2000, 'ftol': 1e-8, 'disp': True, 'eps': 1e-8})
+
 
     # extract trim state and input
     trim_state = res.x[0:12].reshape((12, 1))
@@ -56,6 +50,8 @@ def compute_trim(mav, Va, gamma):
     # print results
     trim_input.print()
     print('Trimmed State:\n', trim_state.T)
+    print("Initial theta:", par.initial_state[7])
+    print("Trimmed theta:", trim_state[7, 0])
     return trim_state, trim_input
 
 
@@ -80,10 +76,10 @@ def trim_objective_fun(x, mav, Va, gamma):
     
     # Compute cost function J (minimizing error in state derivatives)
     tmp = desired_trim_state_dot - f
-    J = np.linalg.norm(tmp[2:12])**2  # ignore first two position derivatives
-    # print("Forces at trim:", forces)
-    # print("Moments at trim:", moments)
-    # print("Final cost J:", J)
+    J = np.linalg.norm(tmp[3:12])**2/10  # ignore first two position derivatives
+    print(f"Current x: {x}")
+
+    print("Final cost J:", J)
 
     return J
 
