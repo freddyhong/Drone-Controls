@@ -97,7 +97,7 @@ def trim_objective_fun(x, mav, Va, gamma):
     f = mav.equations_of_motion(state_vec, forces, moments)
 
     diff = desired_trim_state_dot - f
-    cost = np.linalg.norm(diff[2:12])**2
+    cost = np.linalg.norm(diff[2:12])**2 / 10  # Ignore first two position derivatives
 
     print(f"Current x: {x}")
     print("Final cost:", cost)

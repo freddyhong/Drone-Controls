@@ -146,9 +146,11 @@ class MAV_wind(MAV):
             )
 
         # Add gravitational forces
-        fx += self.mass * par.gravitational_acceleration * np.sin(theta)
-        fy -= self.mass * par.gravitational_acceleration * np.cos(theta) * np.sin(phi)
-        fz -= self.mass * par.gravitational_acceleration * np.cos(theta) * np.cos(phi)
+        fg_ned = np.array([0, 0, self.mass * par.gravitational_acceleration])
+        fg_body = (R.T @ fg_ned).flatten()
+        fx += fg_body[0]
+        fy += fg_body[1]
+        fz += fg_body[2]
 
         # Compute moments
         q_bar = 0.5 * par.rho * self.Va**2 * par.S_wing  # Dynamic pressure
