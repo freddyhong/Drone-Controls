@@ -5,9 +5,9 @@ Jx = 0.8244
 Jy = 1.135
 Jz = 1.759
 Jxz = 0.1204
-ts_simulation = 0.0025
+ts_simulation = 0.0001
 start_time = 0.0
-end_time = 10.0
+end_time = 5.0
 
 gravitational_acceleration = 9.81
 
@@ -24,7 +24,7 @@ rho = 1.2682  # Air density (kg/m^3)
 S_wing = 0.55  # Wing surface area (m^2)
 b = 2.8956  # Wing span (m)
 c = 0.18994  # Mean aerodynamic chord (m)
-AR = 15.0  # Aspect ratio of the wing
+AR = (b**2) / S_wing  # Aspect ratio of the wing
 
 # Aerodynamic coefficients
 C_L_0 = 0.23
@@ -67,7 +67,7 @@ initial_state = [
     0.0,  # v velocity (m/s)
     0.0,  # w velocity (m/s)
     0.0,  # phi (roll angle, rad)
-    0.03,  # theta (pitch angle, rad)
+    0.0,  # theta (pitch angle, rad)
     0.0,  # psi (yaw angle, rad)
     0.0,  # p (roll rate, rad/s)
     0.0,  # q (pitch rate, rad/s)
