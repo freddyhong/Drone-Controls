@@ -1,5 +1,6 @@
 import numpy as np
 import control as ct
+from numpy.linalg import matrix_rank
 
 # Parameters
 M = 0.5
@@ -38,3 +39,33 @@ sys = ct.ss(A, B, C, D)
 
 poles = ct.poles(sys)
 print('poles:', poles)
+
+Co = ct.ctrb(A, B)
+nc = matrix_rank(Co)
+print('Controllability matrix:', Co)
+print('Controllability rank:', nc)  #system is controllable
+
+#LQR
+Q = np.array([
+    [1, 0, 0, 0],
+    [0, 0.1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 0.1]
+])
+R = np.array([
+    [1]
+])
+
+K = ct.lqr(A, B, Q, R)
+print('LQR gain:', K)
+# Closed loop system
+A_cl = A - B @ K
+
+# poles of the closed loop system
+A_cl = A - B @ K
+poles_cl = np.linalg.eigvals(A_cl)
+print('Closed loop poles:', poles_cl)
+
+
+
+
