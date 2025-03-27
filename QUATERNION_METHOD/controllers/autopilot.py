@@ -4,6 +4,12 @@ autopilot block for mavsim_python
     - Last Update:
         2/6/2019 - RWB
 """
+import sys
+import os
+
+# Add the parent directory of 'models' to the system path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import numpy as np
 import parameters.control_parameters as AP
 from tools.transfer_function import TransferFunction

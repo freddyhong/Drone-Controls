@@ -1,3 +1,9 @@
+import sys
+import os
+
+# Add the parent directory of 'models' to the system path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import numpy as np
 from tools.rotations import euler_to_quaternion
 

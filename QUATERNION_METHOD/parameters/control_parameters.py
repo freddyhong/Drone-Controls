@@ -1,3 +1,9 @@
+import sys
+import os
+
+# Add the parent directory of 'models' to the system path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import numpy as np
 import design_projects.chap05.model_coef as TF
 import parameters.aerosonde_parameters as MAV

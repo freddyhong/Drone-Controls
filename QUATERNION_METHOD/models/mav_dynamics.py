@@ -3,6 +3,12 @@ mavDynamics
     - this file implements the dynamic equations of motion for MAV
     - use unit quaternion for the attitude state
 """
+import sys
+import os
+
+# Add the parent directory of 'models' to the system path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import numpy as np
 from message_types.msg_state import MsgState
 import parameters.aerosonde_parameters as MAV

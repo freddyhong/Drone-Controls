@@ -3,6 +3,12 @@ mavDynamics
     - this file implements the dynamic equations of motion for MAV
     - use unit quaternion for the attitude state
 """
+import sys
+import os
+
+# Add the parent directory of 'models' to the system path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import numpy as np
 from models.mav_dynamics import MavDynamics as MavDynamicsForces
 from message_types.msg_state import MsgState
@@ -94,7 +100,10 @@ class MavDynamics(MavDynamicsForces):
         phi, theta, psi = quaternion_to_euler(self._state[6:10])
         p, q, r = self._state[10:13]
 
-        delta_a, delta_e, delta_r, delta_t = delta[0:4]
+        delta_a = delta.aileron
+        delta_e = delta.elevator
+        delta_r = delta.rudder
+        delta_t = delta.throttle
 
         # Compute gravitational forces in body frame
         fg_x = -MAV.mass * MAV.gravity * np.sin(theta)
