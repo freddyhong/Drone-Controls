@@ -43,7 +43,7 @@ print('poles:', poles)
 Co = ct.ctrb(A, B)
 nc = matrix_rank(Co)
 print('Controllability matrix:', Co)
-print('Controllability rank:', nc)  #system is controllable
+print('Controllability rank:', nc)  #system is controllable rank = 4
 
 #LQR
 Q = np.array([
@@ -56,14 +56,14 @@ R = np.array([
     [1]
 ])
 
-K = ct.lqr(A, B, Q, R)
+K, _, _ = ct.lqr(A, B, Q, R)
 print('LQR gain:', K)
-# Closed loop system
-A_cl = A - B @ K
 
-# poles of the closed loop system
-A_cl = A - B @ K
-poles_cl = np.linalg.eigvals(A_cl)
+# Closed loop system linearized around pendulum up position
+sys_cl = ct.ss(A - B @ K, B, C, D)
+print('Closed loop system:', sys_cl)
+
+poles_cl = np.linalg.eigvals(sys_cl.A)
 print('Closed loop poles:', poles_cl)
 
 
