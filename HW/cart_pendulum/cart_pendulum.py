@@ -33,3 +33,8 @@ D = np.array([
     ])
 
 print(A)
+
+sys = ct.ss(A, B, C, D)
+
+poles = ct.poles(sys)
+print('poles:', poles)
