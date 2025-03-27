@@ -2,6 +2,9 @@ import numpy as np
 import control as ct
 from numpy.linalg import matrix_rank
 
+import matplotlib.pyplot as plt
+from scipy import signal
+
 # Parameters
 M = 0.5
 m = 0.2
@@ -66,6 +69,16 @@ print('closed loop system:', sys_cl)
 poles_cl = np.linalg.eigvals(sys_cl.A)
 print('closed loop poles:', poles_cl)
 
+# plot step response of closed loop system
+t = np.linspace(0, 10, 1000)
+t, y = ct.step_response(sys_cl, T=t)
 
-
-
+plt.figure()
+plt.plot(t, y[0, 0, :], label='cart position')   # y[0] is cart position
+plt.plot(t, y[1, 0, :], label='pendulum angle')  # y[1] is pendulum angle
+plt.title('Step response of closed loop system')
+plt.xlabel('Time [s]')
+plt.ylabel('Response')
+plt.legend()
+plt.grid()
+plt.show()
