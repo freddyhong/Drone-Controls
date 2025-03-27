@@ -21,6 +21,12 @@ Writes the ss and tf coefficients to a file named model_coef.py
     - The function returns Va_trim, alpha_trim, theta_trim, a_phi1, a_phi2, a_theta1, a_theta2, a_theta3, a_V1, a_V2, a_V3
 
 """
+import sys
+import os
+
+# Add the parent directory of 'models' to the system path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import numpy as np
 from scipy.optimize import minimize
 from tools.rotations import euler_to_quaternion, quaternion_to_euler
