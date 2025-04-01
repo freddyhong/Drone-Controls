@@ -17,7 +17,7 @@ from tools.rotations import euler_to_quaternion
 from message_types.msg_delta import MsgDelta
 import time
 
-def compute_trim(mav, Va, gamma):
+def compute_trim(mav, Va, gamma, wind=np.zeros((6, 1))):
     # define initial state and input
 
     # set the initial conditions of the optimization
@@ -40,7 +40,8 @@ def compute_trim(mav, Va, gamma):
                        [0],  # aileron
                        [0.005],  # rudder
                        [0.5]]) # throttle
-    x0 = np.concatenate((state0, delta0), axis=0)
+    x0 = np.concatenate((state0, delta0), axis=0).flatten()
+    
     # define equality constraints
     cons = ({'type': 'eq',
              'fun': lambda x: np.array([
@@ -66,7 +67,7 @@ def compute_trim(mav, Va, gamma):
              })
     # solve the minimization problem to find the trim states and inputs
 
-    res = minimize(trim_objective_fun, x0, method='SLSQP', args=(mav, Va, gamma),
+    res = minimize(trim_objective_fun, x0, method='SLSQP', args=(mav, Va, gamma, wind),
                    constraints=cons, 
                    options={'ftol': 1e-10, 'disp': True})
     
@@ -78,10 +79,19 @@ def compute_trim(mav, Va, gamma):
                           throttle=res.x.item(16))
     trim_input.print()
     print('trim_state=', trim_state.T)
+
+    from tools.rotations import quaternion_to_euler
+    # Extract quaternion from trim_state
+    q_trim = trim_state[6:10].flatten()
+    # Convert to Euler angles (phi, theta, psi)
+    phi, theta, psi = quaternion_to_euler(q_trim)
+    print(f"Trim Euler angles (rad): phi={phi:.6f}, theta={theta:.6f}, psi={psi:.6f}")
+    print(f"Trim Euler angles (deg): phi={np.degrees(phi):.2f}, theta={np.degrees(theta):.2f}, psi={np.degrees(psi):.2f}")
+
     return trim_state, trim_input
 
 
-def trim_objective_fun(x, mav, Va, gamma):
+def trim_objective_fun(x, mav, Va, gamma, wind):
     # objective function to be minimized
     state = x[0:13]
     delta = MsgDelta(elevator=x.item(13),
@@ -99,7 +109,7 @@ def trim_objective_fun(x, mav, Va, gamma):
 
     # Update MAV state
     mav.state = state
-    mav._update_velocity_data()
+    mav._update_velocity_data(wind)
     forces_moments = mav._forces_moments(delta)
     f = mav._f(state, forces_moments)
 

@@ -26,31 +26,18 @@ class WindSimulation:
         sigma_u, sigma_v, sigma_w = 1.06, 1.06, 0.7
 
         # Dryden transfer functions for u, v, w gusts (from Section 4.4 UAV Book)
-        self.u_w = TransferFunction(
-            num=np.array([[sigma_u * np.sqrt(2 * self._Va / (np.pi * Lu))]]),
-            den=np.array([[1.0, self._Va / Lu]]),
-            Ts=Ts
-        )
+        self.u_w = TransferFunction(num=np.array([[sigma_u * np.sqrt(2 * self._Va / (np.pi * Lu))]]), 
+                                    den=np.array([[1.0, self._Va / Lu]]), Ts=Ts)
 
-        self.v_w = TransferFunction(
-            num=np.array([
-                [sigma_v * np.sqrt(3 * self._Va / (np.pi * Lv)),
-                 sigma_v * np.sqrt(3 * self._Va / (np.pi * Lv)) * self._Va / (np.sqrt(3) * Lv)]
-            ]),
-            den=np.array([[1.0, 2 * self._Va / Lv, (self._Va / Lv)**2]]),
-            Ts=Ts
-        )
+        self.v_w = TransferFunction(num=np.array([[sigma_v * np.sqrt(3 * self._Va / (np.pi * Lv)), 
+                                                sigma_v * np.sqrt(3 * self._Va / (np.pi * Lv)) * self._Va / (np.sqrt(3) * Lv)]]),
+                                    den=np.array([[1.0, 2 * self._Va / Lv, (self._Va / Lv)**2]]), Ts=Ts)
 
-        self.w_w = TransferFunction(
-            num=np.array([
-                [sigma_w * np.sqrt(3 * self._Va / (np.pi * Lw)),
-                 sigma_w * np.sqrt(3 * self._Va / (np.pi * Lw)) * self._Va / (np.sqrt(3) * Lw)]
-            ]),
-            den=np.array([[1.0, 2 * self._Va / Lw, (self._Va / Lw)**2]]),
-            Ts=Ts
-        )
+        self.w_w = TransferFunction(num=np.array([[sigma_w * np.sqrt(3 * self._Va / (np.pi * Lw)), 
+                                                sigma_w * np.sqrt(3 * self._Va / (np.pi * Lw)) * self._Va / (np.sqrt(3) * Lw)]]),
+                                    den=np.array([[1.0, 2 * self._Va / Lw, (self._Va / Lw)**2]]), Ts=Ts)
 
-    def update(self):
+    def update(self): # first 3 elements are steady state wind, last 3 are gusts
         if self.gust_flag:
             gust = np.array([
                 [self.u_w.update(np.random.randn())],

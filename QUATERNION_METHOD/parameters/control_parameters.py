@@ -5,7 +5,8 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
-import design_projects.chap05.model_coef as TF
+'''using model_coeff from luctenburg temporary -> fix this later'''
+import parameters.mavsim_python_chap5_model_coef as TF
 import parameters.aerosonde_parameters as MAV
 
 

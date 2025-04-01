@@ -1,31 +1,6 @@
 """
-compute_ss_model
-    - Chapter 5 assignment for Beard & McLain, PUP, 2012
-    - Update history:  
-        2/4/2019 - RWB
-
-Computes the state space and transfer function models of the UAV given the trim conditions
-Writes the ss and tf coefficients to a file named model_coef.py
-
-    - The state space model is of the form xdot = Ax + Bu
-    - The state vector x is:
-        x = [u, w, q, theta, pd]
-    - The control vector u is:
-        u = [delta_e, delta_t]
-    - The output vector y is:   
-        y = [u, w, q, theta, pd]
-    - The function returns A_lon, B_lon, A_lat, B_lat
-
-    - The transfer function model is of the form:
-        H(s) = [a_phi1, a_phi2] / [1, a_phi1, a_phi2]
-    - The function returns Va_trim, alpha_trim, theta_trim, a_phi1, a_phi2, a_theta1, a_theta2, a_theta3, a_V1, a_V2, a_V3
-
+THIS IS ALL WRONG. DO NOT USE YET.
 """
-import sys
-import os
-
-# Add the parent directory of 'models' to the system path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
 from scipy.optimize import minimize
@@ -168,7 +143,12 @@ def quaternion_state(x_euler):
     ##### TODO #####
     x_quat = np.zeros((13,1))
     x_quat[0:6] = x_euler[0:6]  # Position and velocity
-    x_quat[6:10] = np.array([[e0], [e1], [e2], [e3]])  # Quaternion
+
+    x_quat[6] = e0
+    x_quat[7] = e1
+    x_quat[8] = e2
+    x_quat[9] = e3 # Quaternion
+
     x_quat[10:13] = x_euler[9:12]  # Angular rates
 
     return x_quat

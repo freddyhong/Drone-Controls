@@ -43,11 +43,11 @@ class MavDynamics(MavDynamicsForces):
             wind is the wind vector in inertial coordinates
             Ts is the time step between function calls.
         '''
+        # update the airspeed, angle of attack, and side slip angles using new state
+        self._update_velocity_data(wind)
         # get forces and moments acting on rigid bod
         forces_moments = self._forces_moments(delta)
         super()._rk4_step(forces_moments)
-        # update the airspeed, angle of attack, and side slip angles using new state
-        self._update_velocity_data(wind)
         # update the message class for the true state
         self._update_true_state()
 
@@ -59,10 +59,8 @@ class MavDynamics(MavDynamicsForces):
 
         # convert steady-state wind vector from NED to body frame
         R = quaternion_to_rotation(self._state[6:10]) # rotation matrix (body to NED)
-        wind_body = R.T @ steady_state  # transform steady-state wind to body frame
-        '''
-            not sure whether we have to transform wind_body rotation matrix ?
-        '''
+        wind_body = R.T @ steady_state  # transform steady-state wind to body frame 
+
         # add the gust while in body frame
         wind_body += gust
         # convert total wind to NED frame
