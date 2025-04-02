@@ -1,13 +1,20 @@
+import sys
+import os
+
+# Add the parent directory of 'models' to the system path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import numpy as np
-from tools.rotations import Euler2Quaternion
+from tools.rotations import euler_to_quaternion
 
 ######################################################################################
                 #   Initial Conditions
 ######################################################################################
+
 #   Initial conditions for MAV
-north0 = 0.  # initial north position
-east0 = 0.  # initial east position
-down0 = -100.0  # initial down position
+pn0 = 0.  # initial north position
+pe0 = 0.  # initial east position
+pd0 = -100.0  # initial down position
 u0 = 25.  # initial velocity along body x-axis
 v0 = 0.  # initial velocity along body y-axis
 w0 = 0.  # initial velocity along body z-axis
@@ -18,13 +25,13 @@ p0 = 0  # initial roll rate
 q0 = 0  # initial pitch rate
 r0 = 0  # initial yaw rate
 Va0 = np.sqrt(u0**2+v0**2+w0**2)
+
 #   Quaternion State
-e = Euler2Quaternion(phi0, theta0, psi0)
+e = euler_to_quaternion(phi0, theta0, psi0)
 e0 = e.item(0)
 e1 = e.item(1)
 e2 = e.item(2)
 e3 = e.item(3)
-
 
 ######################################################################################
                 #   Physical Parameters
@@ -111,6 +118,7 @@ C_Q0 = 0.005230
 C_T2 = -0.1079
 C_T1 = -0.06044
 C_T0 = 0.09357
+
 
 ######################################################################################
                 #   Calculation Variables
