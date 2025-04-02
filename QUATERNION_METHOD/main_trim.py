@@ -1,7 +1,5 @@
 import sys
 import os
-
-# Add the parent directory of 'models' to the system path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
@@ -13,6 +11,7 @@ from models.wind_simulation import WindSimulation
 from models.trim import compute_trim
 from tools.rotations import quaternion_to_euler
 
+# testing mavism_ch5_coeff trim conditons values
 # Time setup
 dt = 0.01
 sim_time = 1000  # total simulation time (s)
@@ -23,19 +22,19 @@ mav = MavDynamics(Ts=dt)
 
 # Set initial state to trimmed state manually put in
 trim_state_vector = np.array([
-    0, 0, 0,            # pn, pe, pd
-    25.0, 0, -4.05e-05, # u, v, w
-    1.0, 0.0, -8.17e-07, 0.0,  # quaternion
+    -0, -0, -100,            # pn, pe, pd
+    24.97, 0, 1.1945, # u, v, w
+    0.9938, 0.0, 0.1109, 0.0,  # quaternion
     0, 0, 0             # p, q, r
 ]).reshape((13, 1))
 mav._state = trim_state_vector
 
 # Set control input to trimmed control input manually put in
 trim_input = MsgDelta()
-trim_input.elevator = 0.02389
-trim_input.aileron = 0.00247
-trim_input.rudder = -0.00041
-trim_input.throttle = 0.30547
+trim_input.elevator = -0.118662
+trim_input.aileron = 0.009775
+trim_input.rudder = -0.001611
+trim_input.throttle = 0.857721
 
 # Lists to store trajectory
 north = []

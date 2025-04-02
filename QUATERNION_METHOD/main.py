@@ -18,8 +18,8 @@ t = np.linspace(0, dt*num_steps, num_steps)
 mav = MavDynamics(Ts=dt)
 
 WIND_SIM = WindSimulation(Ts = dt, gust_flag=False, steady_state = np.array([[0., 0., 0.]]).T)   # test with no wind nor gust 
-#WIND_SIM = WindSimulation(Ts = dt, gust_flag=False, steady_state = np.array([[0., 0., 5.]]).T)   # test with only steady state wind
-#WIND_SIM = WindSimulation(Ts = dt, gust_flag=True, steady_state = np.array([[0., 0., 5.]]).T)   # test with gusts and steady state wind
+#WIND_SIM = WindSimulation(Ts = dt, gust_flag=False, steady_state = np.array([[0., 5., 0.]]).T)   # test with only steady state wind
+#WIND_SIM = WindSimulation(Ts = dt, gust_flag=True, steady_state = np.array([[5., 5., 0.]]).T)   # test with gusts and steady state wind
 
 #Trim Conditions
 Va = 25.0                      # desired airspeed (m/s)
@@ -32,9 +32,6 @@ mav._state = trim_state
 delta_array = np.array([trim_input.elevator, trim_input.aileron, trim_input.rudder, trim_input.throttle])
 delta = MsgDelta()
 delta.from_array(delta_array) 
-
-#Control input 
-# delta = MsgDelta(elevator=0.0, aileron=0.0, rudder=0.0, throttle=0.0) 
 
 state_history = np.zeros((num_steps, 13))  
 wind_history = np.zeros((num_steps, 6))
