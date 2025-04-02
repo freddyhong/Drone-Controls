@@ -21,13 +21,13 @@ from tools.rotations import quaternion_to_euler
 
 # Simulation parameters
 dt = 0.01  # time step
-sim_time = 60.0  # total simulation time
+sim_time = 50.0  # total simulation time
 num_steps = int(sim_time / dt)
 t = np.linspace(0, sim_time, num_steps)
 
 # Initialize MAV and wind simulation
 mav = MavDynamics(Ts=dt)
-wind_sim = WindSimulation(Ts=dt, gust_flag=False, steady_state=np.array([[0., 0., 0.]]).T)
+wind_sim = WindSimulation(Ts=dt, gust_flag=False, steady_state=np.array([[0., 0., 0.]]).T) # no wind nor gust
 
 # Trim conditions
 Va = 25.0  # desired airspeed (m/s)
