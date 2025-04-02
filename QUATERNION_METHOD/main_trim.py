@@ -21,7 +21,7 @@ steps = int(sim_time / dt)
 # Initialize MAV
 mav = MavDynamics(Ts=dt)
 
-# Set initial state to trimmed state
+# Set initial state to trimmed state manually put in
 trim_state_vector = np.array([
     0, 0, 0,            # pn, pe, pd
     25.0, 0, -4.05e-05, # u, v, w
@@ -30,7 +30,7 @@ trim_state_vector = np.array([
 ]).reshape((13, 1))
 mav._state = trim_state_vector
 
-# Set control input to trimmed control input
+# Set control input to trimmed control input manually put in
 trim_input = MsgDelta()
 trim_input.elevator = 0.02389
 trim_input.aileron = 0.00247
