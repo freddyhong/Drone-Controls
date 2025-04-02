@@ -1,12 +1,12 @@
 """
-mavDynamics 
-    - this file implements the dynamic equations of motion for MAV
-    - use unit quaternion for the attitude state
+mavDynamics Control
+    - wind
+    - forces/moments
+    - aerodynamic model implementation
+    - motor thrust/propulsion
 """
 import sys
 import os
-
-# Add the parent directory of 'models' to the system path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
@@ -20,17 +20,13 @@ from tools.rotations import quaternion_to_rotation, quaternion_to_euler
 class MavDynamics(MavDynamicsForces):
     def __init__(self, Ts):
         super().__init__(Ts)
-        # store wind data for fast recall since it is used at various points in simulation
-        self._wind = np.array([[0.], [0.], [0.]])  # wind in NED frame in meters/sec
-        # store forces to avoid recalculation in the sensors function
+        self._wind = np.array([[0.], [0.], [0.]])  # wind in NED frame
         self._forces = np.array([[0.], [0.], [0.]])
         self._Va = MAV.u0
         self._alpha = 0
         self._beta = 0
-        # update velocity data and forces and moments
         self._update_velocity_data()
         self._forces_moments(delta=MsgDelta())
-        # update the message class for the true state
         self._update_true_state()
 
 
@@ -43,12 +39,9 @@ class MavDynamics(MavDynamicsForces):
             wind is the wind vector in inertial coordinates
             Ts is the time step between function calls.
         '''
-        # update the airspeed, angle of attack, and side slip angles using new state
         self._update_velocity_data(wind)
-        # get forces and moments acting on rigid bod
         forces_moments = self._forces_moments(delta)
         super()._rk4_step(forces_moments)
-        # update the message class for the true state
         self._update_true_state()
 
     ###################################
@@ -57,14 +50,10 @@ class MavDynamics(MavDynamicsForces):
         steady_state = wind[0:3] # NED frame
         gust = wind[3:6] # body frame
 
-        # convert steady-state wind vector from NED to body frame
-        R = quaternion_to_rotation(self._state[6:10]) # rotation matrix (body to NED)
-        wind_body = R.T @ steady_state  # transform steady-state wind to body frame 
-
-        # add the gust while in body frame
-        wind_body += gust
-        # convert total wind to NED frame
-        self._wind = R @ wind_body
+        # convert steady-state wind from NED to body frame
+        R = quaternion_to_rotation(self._state[6:10]) # bosy to NED
+        wind_body = R.T @ steady_state + gust  # total wind in body frame 
+        self._wind = R @ wind_body # convert total wind to NED frame
 
         # velocity vector relative to the airmass
         ur = self._state.item(3) - wind_body.item(0) # u - wind_x

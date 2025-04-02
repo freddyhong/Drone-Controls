@@ -1,12 +1,8 @@
 """
-Class to determine wind velocity at any given moment,
-calculates a steady wind speed and uses a stochastic
-process to represent wind gusts. (Follows section 4.4 in UAV book)
+steady wind speed random wind gusts
 """
 import sys
 import os
-
-# Add the parent directory of 'models' to the system path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
