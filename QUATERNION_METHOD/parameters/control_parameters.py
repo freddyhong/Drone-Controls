@@ -1,12 +1,9 @@
 import sys
 import os
-
-# Add the parent directory of 'models' to the system path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
-'''using model_coeff from luctenburg temporary -> fix this later'''
-import parameters.mavsim_python_chap5_model_coef as TF
+import parameters.mavsim_python_chap5_model_coef as TF  # using model_coeff from luctenburg temporarily
 import parameters.aerosonde_parameters as MAV
 
 gravity = MAV.gravity  # gravity constant
