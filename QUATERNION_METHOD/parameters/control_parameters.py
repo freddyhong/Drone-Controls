@@ -12,7 +12,7 @@ rho = MAV.rho          # density of air
 sigma = 0.05           # low pass filter gain for derivative
 
 #----------roll loop-------------
-wn_roll = 7.0         
+wn_roll = 20       
 zeta_roll = 0.707     
 roll_kp = (wn_roll**2)/TF.a_phi2
 roll_kd = (2*zeta_roll*wn_roll - TF.a_phi1)/TF.a_phi2
@@ -24,11 +24,11 @@ course_kp = 2.0*zeta_course*wn_course*Va0/gravity
 course_ki = (wn_course**2)*Va0/gravity
 
 #----------yaw damper-------------
-yaw_damper_p_wo = 1.0  
-yaw_damper_kr = 0.5    
+yaw_damper_p_wo = 0.45
+yaw_damper_kr = 0.2    
 
 #----------pitch loop-------------
-wn_pitch = 5.0        
+wn_pitch = 24.0        #focus on pitch cuz thats what affects stability
 zeta_pitch = 0.707    
 pitch_kp = (wn_pitch**2 - TF.a_theta2)/TF.a_theta3
 pitch_kd = (2 * zeta_pitch*wn_pitch - TF.a_theta1) / TF.a_theta3
@@ -43,6 +43,6 @@ altitude_zone = 10.0  # dead zone for altitude (m)
 
 #---------airspeed hold using throttle---------------
 wn_airspeed_throttle = 3.0
-zeta_airspeed_throttle = 0.707
+zeta_airspeed_throttle = 2
 airspeed_throttle_kp = (2.0*zeta_airspeed_throttle*wn_airspeed_throttle - TF.a_V1)/TF.a_V2
 airspeed_throttle_ki = (wn_airspeed_throttle**2)/TF.a_V2
