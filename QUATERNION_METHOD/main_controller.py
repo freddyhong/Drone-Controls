@@ -22,7 +22,7 @@ from tools.rotations import quaternion_to_euler
 
 # Simulation parameters
 dt = 0.01  # time step
-sim_time = 50.0  # total simulation time
+sim_time = 100.0  # total simulation timewhy
 num_steps = int(sim_time / dt)
 t = np.linspace(0, sim_time, num_steps)
 
@@ -56,30 +56,39 @@ autopilot_cmd.course_command = np.radians(0.0)
 
 # Data storage
 state_history = np.zeros((num_steps, 13))
-cmd_history = np.zeros((num_steps, 3))  # altitude, airspeed, course
+cmd_history = np.zeros((num_steps, 5))  # altitude, airspeed, course, phi, theta
 delta_history = np.zeros((num_steps, 4))  # elevator, aileron, rudder, throttle
 
 # Main simulation loop - MODIFIED TEST FLIGHT PLAN
 for i in range(num_steps):
     wind = wind_sim.update()
     
-    # Gentle test flight profile
-    if t[i] < 15.0:  # First 15 sec: Straight/level flight
+    # Straight/level flight (0-15s)
+    if t[i] < 15.0:
         autopilot_cmd.altitude_command = -100.0
         autopilot_cmd.airspeed_command = 25.0
         autopilot_cmd.course_command = np.radians(0.0)
         
-    elif t[i] < 30.0:  # 15-30 sec: Gradual climb to 150m
-        autopilot_cmd.altitude_command = -100 - (50*(t[i]-15)/15)  # Linear ramp
+    # Gradual climb to 150m (15-30s)
+    elif t[i] < 30.0:
+        autopilot_cmd.altitude_command = -100 - (50*(t[i]-15)/15)
         autopilot_cmd.airspeed_command = 25.0
         
-    elif t[i] < 45.0:  # 30-45 sec: Gentle right turn to 45°
-        autopilot_cmd.altitude_command = -150.0
-        autopilot_cmd.course_command = np.radians(45*(t[i]-30)/15)  # Ramp turn
+    # Gentle right turn to 45° (30-45s) - NO ALTITUDE CHANGE
+    elif t[i] < 45.0:
+        autopilot_cmd.altitude_command = -150.0  # Hold altitude
+        autopilot_cmd.course_command = np.radians(45*(t[i]-30)/15)
         
-    elif t[i] < 60.0:  # 45-60 sec: Descend to 100m while turning left 90°
+    # Descend to 100m (45-60s) - NO TURNING
+    elif t[i] < 60.0:
         autopilot_cmd.altitude_command = -150 + (50*(t[i]-45)/15)
-        autopilot_cmd.course_command = np.radians(45 - 135*(t[i]-45)/15)
+        autopilot_cmd.course_command = np.radians(45)  # Hold course
+        
+    # Turn left to -90° (60-75s) - NO ALTITUDE CHANGE
+    elif t[i] < 75.0:
+        autopilot_cmd.altitude_command = -100.0  # Hold altitude
+        autopilot_cmd.airspeed_command = 25 + 5*(t[i]-60)/15
+        autopilot_cmd.course_command = np.radians(45 - 135*(t[i]-60)/15)
         
     elif t[i] < 75.0:  # 60-75 sec: Accelerate to 30 m/s
         autopilot_cmd.altitude_command = -100.0
@@ -95,7 +104,10 @@ for i in range(num_steps):
     state_history[i, :] = mav._state[:13, 0]
     cmd_history[i, :] = [autopilot_cmd.altitude_command, 
                         autopilot_cmd.airspeed_command, 
-                        autopilot_cmd.course_command]
+                        autopilot_cmd.course_command,
+                        cmd_state.phi,
+                        cmd_state.theta]
+    
     delta_history[i, :] = [delta.elevator, delta.aileron, delta.rudder, delta.throttle]
 
 # Convert states to more readable variables
@@ -119,7 +131,7 @@ phi, theta, psi = euler_angles[:, 0], euler_angles[:, 1], euler_angles[:, 2]
 
 # Calculate airspeed and groundspeed
 Va = np.sqrt(u**2 + v**2 + w**2)
-Vg = np.sqrt((u*np.cos(psi) + v*np.sin(psi))**2 + (v*np.cos(psi) - u*np.sin(psi))**2 + w**2)
+Vg = np.sqrt((u + wind_sim._steady_state[0,0])**2 + (v + wind_sim._steady_state[1,0])**2 + w**2)
 
 # Calculate course angle (chi)
 chi = np.arctan2(Vg*np.sin(psi), Vg*np.cos(psi))
@@ -144,8 +156,10 @@ ax1[0].plot(t, cmd_history[:, 0], '--', label='Cmd Altitude')
 ax1[0].set_ylabel('Position [m]')
 ax1[0].legend()
 
-ax1[1].plot(t, np.degrees(phi), label='Roll (φ)')
-ax1[1].plot(t, np.degrees(theta), label='Pitch (θ)')
+ax1[1].plot(t, np.degrees(phi), label='Actual Roll (φ)')
+ax1[1].plot(t, np.degrees(cmd_history[:,3]), '--', label='Cmd Roll')
+ax1[1].plot(t, np.degrees(theta), label='Actual Pitch (θ)')
+ax1[1].plot(t, np.degrees(cmd_history[:,4]), '--', label='Cmd Pitch')
 ax1[1].plot(t, np.degrees(psi), label='Yaw (ψ)')
 ax1[1].set_ylabel('Attitude [deg]')
 ax1[1].legend()
