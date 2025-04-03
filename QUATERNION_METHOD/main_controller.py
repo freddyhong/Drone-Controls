@@ -1,6 +1,7 @@
 """
     - Main controller to test the autopilot implementation
     - Implements both lateral and longitudinal control using successive loop closure
+    - Adjust gains in control_parameters.py 
 """
 
 import sys
@@ -58,30 +59,39 @@ state_history = np.zeros((num_steps, 13))
 cmd_history = np.zeros((num_steps, 3))  # altitude, airspeed, course
 delta_history = np.zeros((num_steps, 4))  # elevator, aileron, rudder, throttle
 
-# Main simulation loop
+# Main simulation loop - MODIFIED TEST FLIGHT PLAN
 for i in range(num_steps):
-    # Update wind
     wind = wind_sim.update()
     
-    # Update autopilot commands at specific times
-    if t[i] >= 10.0 and t[i] < 20.0:
-        autopilot_cmd.altitude_command = -150.0  # step up in altitude
-    elif t[i] >= 20.0 and t[i] < 30.0:
-        autopilot_cmd.altitude_command = -50.0  # step down in altitude
-    elif t[i] >= 30.0 and t[i] < 40.0:
-        autopilot_cmd.course_command = np.radians(45.0)  # turn right
-    elif t[i] >= 40.0 and t[i] < 50.0:
-        autopilot_cmd.course_command = np.radians(-225.0)  # test >180° wrap (left turn)
-    elif t[i] >= 50.0:
-        autopilot_cmd.airspeed_command = 30.0  # increase airspeed
+    # Gentle test flight profile
+    if t[i] < 15.0:  # First 15 sec: Straight/level flight
+        autopilot_cmd.altitude_command = -100.0
+        autopilot_cmd.airspeed_command = 25.0
+        autopilot_cmd.course_command = np.radians(0.0)
+        
+    elif t[i] < 30.0:  # 15-30 sec: Gradual climb to 150m
+        autopilot_cmd.altitude_command = -100 - (50*(t[i]-15)/15)  # Linear ramp
+        autopilot_cmd.airspeed_command = 25.0
+        
+    elif t[i] < 45.0:  # 30-45 sec: Gentle right turn to 45°
+        autopilot_cmd.altitude_command = -150.0
+        autopilot_cmd.course_command = np.radians(45*(t[i]-30)/15)  # Ramp turn
+        
+    elif t[i] < 60.0:  # 45-60 sec: Descend to 100m while turning left 90°
+        autopilot_cmd.altitude_command = -150 + (50*(t[i]-45)/15)
+        autopilot_cmd.course_command = np.radians(45 - 135*(t[i]-45)/15)
+        
+    elif t[i] < 75.0:  # 60-75 sec: Accelerate to 30 m/s
+        autopilot_cmd.altitude_command = -100.0
+        autopilot_cmd.airspeed_command = 25 + 5*(t[i]-60)/15
+        autopilot_cmd.course_command = np.radians(-90)
+        
+    else:  # Final cruise
+        autopilot_cmd.airspeed_command = 30.0
     
-    # Update autopilot
     delta, cmd_state = autopilot.update(autopilot_cmd, mav.true_state)
-    
-    # Update MAV dynamics
     mav.update(delta, wind)
     
-    # Store data
     state_history[i, :] = mav._state[:13, 0]
     cmd_history[i, :] = [autopilot_cmd.altitude_command, 
                         autopilot_cmd.airspeed_command, 
