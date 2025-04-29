@@ -17,12 +17,13 @@ from message_types.msg_autopilot import MsgAutopilot
 from models.mav_dynamics_control import MavDynamics
 from models.wind_simulation import WindSimulation
 from models.trim import compute_trim
+import parameters.mavsim_python_chap5_model_coef as TF
 from controllers.autopilot import Autopilot
 from tools.rotations import quaternion_to_euler
 
 # Simulation parameters
 dt = 0.01  # time step
-sim_time = 100.0  # total simulation timewhy
+sim_time = 150.0  # total simulation timewhy
 num_steps = int(sim_time / dt)
 t = np.linspace(0, sim_time, num_steps)
 
@@ -34,16 +35,27 @@ wind_sim = WindSimulation(Ts=dt, gust_flag=False, steady_state=np.array([[0., 0.
 Va = 25.0  # desired airspeed (m/s)
 gamma = np.radians(0.0)  # desired flight path angle
 wind_trim = wind_sim.update()  # get current wind
-trim_state, trim_input = compute_trim(mav, Va, gamma, wind=wind_trim)
+# trim_state, trim_input = compute_trim(mav, Va, gamma, wind=wind_trim)
+trim_state = TF.x_trim
+trim_input = TF.u_trim
 
-# Set initial conditions
 mav._state = trim_state
 delta = MsgDelta(
-    elevator=trim_input.elevator,
-    aileron=trim_input.aileron,
-    rudder=trim_input.rudder,
-    throttle=trim_input.throttle
+    elevator=trim_input[0],
+    aileron=trim_input[1],
+    rudder=trim_input[2],
+    throttle=trim_input[3]
 )
+
+
+# Set initial conditions
+# mav._state = trim_state
+# delta = MsgDelta(
+#     elevator=trim_input.elevator,
+#     aileron=trim_input.aileron,
+#     rudder=trim_input.rudder,
+#     throttle=trim_input.throttle
+# )
 
 # Initialize autopilot
 autopilot = Autopilot(ts_control=dt)
@@ -63,40 +75,30 @@ delta_history = np.zeros((num_steps, 4))  # elevator, aileron, rudder, throttle
 for i in range(num_steps):
     wind = wind_sim.update()
     
-    # Straight/level flight (0-15s)
     if t[i] < 15.0:
         autopilot_cmd.altitude_command = -100.0
-        autopilot_cmd.airspeed_command = 25.0
-        autopilot_cmd.course_command = np.radians(0.0)
         
-    # Gradual climb to 150m (15-30s)
     elif t[i] < 30.0:
         autopilot_cmd.altitude_command = -100 - (50*(t[i]-15)/15)
         autopilot_cmd.airspeed_command = 25.0
         
     # Gentle right turn to 45° (30-45s) - NO ALTITUDE CHANGE
-    elif t[i] < 45.0:
+    elif t[i] < 45:
         autopilot_cmd.altitude_command = -150.0  # Hold altitude
         autopilot_cmd.course_command = np.radians(45*(t[i]-30)/15)
         
-    # Descend to 100m (45-60s) - NO TURNING
+    # Climb to 200m (45-60s)
     elif t[i] < 60.0:
-        autopilot_cmd.altitude_command = -150 + (50*(t[i]-45)/15)
-        autopilot_cmd.course_command = np.radians(45)  # Hold course
-        
+        autopilot_cmd.altitude_command = -200
+
     # Turn left to -90° (60-75s) - NO ALTITUDE CHANGE
     elif t[i] < 75.0:
-        autopilot_cmd.altitude_command = -100.0  # Hold altitude
-        autopilot_cmd.airspeed_command = 25 + 5*(t[i]-60)/15
+        autopilot_cmd.altitude_command = -200.0  # Hold altitude
         autopilot_cmd.course_command = np.radians(45 - 135*(t[i]-60)/15)
-        
-    elif t[i] < 75.0:  # 60-75 sec: Accelerate to 30 m/s
-        autopilot_cmd.altitude_command = -100.0
-        autopilot_cmd.airspeed_command = 25 + 5*(t[i]-60)/15
-        autopilot_cmd.course_command = np.radians(-90)
         
     else:  # Final cruise
         autopilot_cmd.airspeed_command = 30.0
+        autopilot_cmd.altitude_command = -300.0
     
     delta, cmd_state = autopilot.update(autopilot_cmd, mav.true_state)
     mav.update(delta, wind)
@@ -136,10 +138,17 @@ Vg = np.sqrt((u + wind_sim._steady_state[0,0])**2 + (v + wind_sim._steady_state[
 # Calculate course angle (chi)
 chi = np.arctan2(Vg*np.sin(psi), Vg*np.cos(psi))
 
+times = [30, 60]
+indices = [np.argmin(np.abs(t - time)) for time in times]
+
 # Plot 3D trajectory
 fig3d = plt.figure(figsize=(10, 8))
 ax3d = fig3d.add_subplot(111, projection='3d')
-ax3d.plot(north, east, -down, label='Flight Path')
+ax3d.plot(north, east, down, label='Flight Path')
+
+for idx in indices:
+    ax3d.scatter(north[idx], east[idx], down[idx], color='red', s=100, label=f'Time {t[idx]:.1f}s')
+
 ax3d.set_xlabel('North [m]')
 ax3d.set_ylabel('East [m]')
 ax3d.set_zlabel('Altitude [m]')
@@ -148,7 +157,7 @@ ax3d.legend()
 plt.tight_layout()
 
 # Plot position and attitude
-fig1, ax1 = plt.subplots(3, 1, figsize=(10, 8))
+fig1, ax1 = plt.subplots(2, 1, figsize=(10, 8))
 ax1[0].plot(t, north, label='North')
 ax1[0].plot(t, east, label='East')
 ax1[0].plot(t, -down, label='Altitude')
@@ -156,19 +165,11 @@ ax1[0].plot(t, cmd_history[:, 0], '--', label='Cmd Altitude')
 ax1[0].set_ylabel('Position [m]')
 ax1[0].legend()
 
-ax1[1].plot(t, np.degrees(phi), label='Actual Roll (φ)')
-ax1[1].plot(t, np.degrees(cmd_history[:,3]), '--', label='Cmd Roll')
-ax1[1].plot(t, np.degrees(theta), label='Actual Pitch (θ)')
-ax1[1].plot(t, np.degrees(cmd_history[:,4]), '--', label='Cmd Pitch')
-ax1[1].plot(t, np.degrees(psi), label='Yaw (ψ)')
-ax1[1].set_ylabel('Attitude [deg]')
+ax1[1].plot(t, np.degrees(chi), label='Course (χ)')
+ax1[1].plot(t, np.degrees(cmd_history[:, 2]), '--', label='Cmd Course')
+ax1[1].set_xlabel('Time [s]')
+ax1[1].set_ylabel('Course [deg]')
 ax1[1].legend()
-
-ax1[2].plot(t, np.degrees(chi), label='Course (χ)')
-ax1[2].plot(t, np.degrees(cmd_history[:, 2]), '--', label='Cmd Course')
-ax1[2].set_xlabel('Time [s]')
-ax1[2].set_ylabel('Course [deg]')
-ax1[2].legend()
 fig1.suptitle('Position and Attitude Response')
 
 # Plot velocities and control inputs
