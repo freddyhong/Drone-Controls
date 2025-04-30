@@ -17,7 +17,7 @@ sigma = 0.05           # low pass filter gain for derivative
 
 #----------roll loop-------------
 wn_roll = 10.1 #7.0         
-zeta_roll = 3.5     
+zeta_roll = 0.707 #3.5     
 roll_kp = (wn_roll**2)/TF.a_phi2
 roll_kd = (2*zeta_roll*wn_roll - TF.a_phi1)/TF.a_phi2
 
@@ -28,12 +28,12 @@ course_kp = 2.0*zeta_course*wn_course*Va0/gravity
 course_ki = (wn_course**2)*Va0/gravity
 
 #----------yaw damper-------------
-yaw_damper_p_wo = 10 #1.0  
-yaw_damper_kr = 0.5 #0.5    
+yaw_damper_p_wo = 0.45 #10 #1.0  
+yaw_damper_kr = 0.2 #0.5    
 
 #----------pitch loop-------------
 wn_pitch = 10.1 #5.0        
-zeta_pitch = 2.6 
+zeta_pitch = 0.707 #2.6 
 pitch_kp = (wn_pitch**2 - TF.a_theta2)/TF.a_theta3
 pitch_kd = (2 * zeta_pitch*wn_pitch - TF.a_theta1) / TF.a_theta3
 K_theta_DC = pitch_kp*TF.a_theta3 / (TF.a_theta2 + pitch_kp * TF.a_theta3)
@@ -46,7 +46,7 @@ altitude_ki = (wn_altitude**2) / (K_theta_DC * Va0)
 altitude_zone = 10.0  # dead zone for altitude (m)
 
 #---------airspeed hold using throttle---------------
-wn_airspeed_throttle = 17
+wn_airspeed_throttle = 1.5 #17
 zeta_airspeed_throttle = 2.1 #0.707
 airspeed_throttle_kp = (2.0*zeta_airspeed_throttle*wn_airspeed_throttle - TF.a_V1)/TF.a_V2
 airspeed_throttle_ki = (wn_airspeed_throttle**2)/TF.a_V2

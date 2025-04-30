@@ -100,10 +100,10 @@ class Observer:
         self.lpf_gyro_z = AlphaFilter(alpha=0.7, y0=initial_measurements.gyro_z)
         self.analog_threshold = stats.chi2.isf(q=0.01, df=3)
         self.pseudo_threshold = stats.chi2.isf(q=0.01, df=2)
-        self.gps_n_old = None
-        self.gps_e_old = None
-        self.gps_Vg_old = None
-        self.gps_course_old = None
+        self.gps_n_old = None #9999
+        self.gps_e_old = None #9999
+        self.gps_Vg_old = None #9999
+        self.gps_course_old = None #9999
 
         self.estimated_state = MsgState()
         self.elapsed_time = 0.0

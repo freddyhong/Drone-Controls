@@ -10,7 +10,7 @@ from viewers.mav_viewer import MavViewer
 from viewers.mav_path_viewer import MavAndPathViewer
 from viewers.mav_waypoint_viewer import MAVAndWaypointViewer
 from viewers.mav_world_viewer import MAVWorldViewer # not sure. was mav_viewer_map at first
-from viewers.mav_viewer_camera import MAVWorldCameraViewer
+from viewers.mav_world_camera_viewer import MAVWorldCameraViewer
 from viewers.planner_viewer import PlannerViewer
 from viewers.data_viewer import DataViewer
 from viewers.sensor_viewer import SensorViewer
