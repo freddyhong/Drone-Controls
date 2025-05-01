@@ -1,6 +1,3 @@
-"""
-Copy and Pasted from github
-"""
 import numpy as np
 from scipy import stats
 import parameters.control_parameters as CTRL

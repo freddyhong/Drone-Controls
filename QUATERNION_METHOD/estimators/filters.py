@@ -1,5 +1,3 @@
-# """
-# Copy and Pasted from github
 import numpy as np
 from typing import Callable
 

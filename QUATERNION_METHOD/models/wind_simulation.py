@@ -1,46 +1,58 @@
-"""
-steady wind speed random wind gusts
-"""
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-import numpy as np
 from tools.transfer_function import TransferFunction
+import numpy as np
 
 
 class WindSimulation:
-    def __init__(self, Ts, gust_flag=True, steady_state=np.array([[0., 0., 0.]]).T):
-        # Steady-state wind in inertial frame
+    def __init__(self, Ts, gust_flag = True, steady_state = np.array([[0., 0., 0.]]).T):
+        # steady state wind defined in the inertial frame
         self._steady_state = steady_state
+        ##### TODO #####
+
+        #   Dryden gust model parameters (pg 56 UAV book)
+
+        altitude = 50
+        Lu = 200
+        Lv = 200
+        Lw = 50
+        sigma_u = 1.06
+        sigma_v = 1.06
+        sigma_w = 0.7
+        Va = 25
+        
+        Hu_num = sigma_u*np.sqrt(2*Va/(Lu*np.pi))
+        Hu_a0 = 1
+        Hu_a1 = Va/Lu
+
+        Hv_co = sigma_v*np.sqrt(3*Va/(Lv*np.pi))
+        Hv_b0 = Hv_co
+        Hv_b1 = Hv_co*(Va/(np.sqrt(3)*Lv))
+        Hv_a0 = 1
+        Hv_a1 = 2*Va/Lv
+        Hv_a2 = (Va/Lv)**2
+
+        Hw_co = sigma_w*np.sqrt(3*Va/(Lw*np.pi))
+        Hw_b0 = Hw_co
+        Hw_b1 = Hw_co*(Va/(np.sqrt(3)*Lw))
+        Hw_a0 = 1
+        Hw_a1 = 2*Va/Lw
+        Hw_a2 = (Va/Lw)**2
+
+
+
+    
+
+        # Dryden transfer functions (section 4.4 UAV book) - Fill in proper num and den
+        self.u_w = TransferFunction(num=np.array([[Hu_num]]), den=np.array([[Hu_a0, Hu_a1]]),Ts=Ts)
+        self.v_w = TransferFunction(num=np.array([[Hv_b0,Hv_b1]]), den=np.array([[Hv_a0,Hv_a1,Hv_a2]]),Ts=Ts)
+        self.w_w = TransferFunction(num=np.array([[Hw_b0,Hw_b1]]), den=np.array([[Hw_a0,Hw_a1,Hw_a2]]),Ts=Ts)
         self._Ts = Ts
-        self._Va = 25.0 
-        self.gust_flag = gust_flag
 
-        # Dryden gust model parameters (low-altitude light turbulence typical)
-        Lu, Lv, Lw = 200.0, 200.0, 50.0  
-        sigma_u, sigma_v, sigma_w = 1.06, 1.06, 0.7
-
-        # Dryden transfer functions for u, v, w gusts (from Section 4.4 UAV Book)
-        self.u_w = TransferFunction(num=np.array([[sigma_u * np.sqrt(2 * self._Va / (np.pi * Lu))]]), 
-                                    den=np.array([[1.0, self._Va / Lu]]), Ts=Ts)
-
-        self.v_w = TransferFunction(num=np.array([[sigma_v * np.sqrt(3 * self._Va / (np.pi * Lv)), 
-                                                sigma_v * np.sqrt(3 * self._Va / (np.pi * Lv)) * self._Va / (np.sqrt(3) * Lv)]]),
-                                    den=np.array([[1.0, 2 * self._Va / Lv, (self._Va / Lv)**2]]), Ts=Ts)
-
-        self.w_w = TransferFunction(num=np.array([[sigma_w * np.sqrt(3 * self._Va / (np.pi * Lw)), 
-                                                sigma_w * np.sqrt(3 * self._Va / (np.pi * Lw)) * self._Va / (np.sqrt(3) * Lw)]]),
-                                    den=np.array([[1.0, 2 * self._Va / Lw, (self._Va / Lw)**2]]), Ts=Ts)
-
-    def update(self): # first 3 elements are steady state wind, last 3 are gusts
-        if self.gust_flag:
-            gust = np.array([
-                [self.u_w.update(np.random.randn())],
-                [self.v_w.update(np.random.randn())],
-                [self.w_w.update(np.random.randn())]
-            ])
-        else:
-            gust = np.zeros((3, 1))
-
-        return np.concatenate((self._steady_state, gust), axis=0)
+    def update(self):
+        # returns a six vector.
+        #   The first three elements are the steady state wind in the inertial frame
+        #   The second three elements are the gust in the body frame
+        gust = np.array([[self.u_w.update(np.random.randn())],
+                         [self.v_w.update(np.random.randn())],
+                         [self.w_w.update(np.random.randn())]])
+        gust *= 0 
+        return np.concatenate(( self._steady_state, gust ))
