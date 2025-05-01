@@ -32,7 +32,7 @@ yaw_damper_p_wo = 0.45 #10 #1.0
 yaw_damper_kr = 0.2 #0.5    
 
 #----------pitch loop-------------
-wn_pitch = 10.1 #5.0        
+wn_pitch = 10.1 #5.0        15
 zeta_pitch = 0.707 #2.6 
 pitch_kp = (wn_pitch**2 - TF.a_theta2)/TF.a_theta3
 pitch_kd = (2 * zeta_pitch*wn_pitch - TF.a_theta1) / TF.a_theta3

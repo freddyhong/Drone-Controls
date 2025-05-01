@@ -14,8 +14,9 @@ import numpy as np
 import parameters.control_parameters as AP
 from tools.transfer_function import TransferFunction
 from tools.wrap import wrap
-from controllers.pi_control import PIControl
-from controllers.pd_control_with_rate import PDControlWithRate
+# from controllers.pi_control import PIControl
+from controllers.pid_control import pidControl, piControl, pdControlWithRate
+# from controllers.pd_control_with_rate import PDControlWithRate
 from message_types.msg_state import MsgState
 from message_types.msg_delta import MsgDelta
 
@@ -23,11 +24,11 @@ from message_types.msg_delta import MsgDelta
 class Autopilot:
     def __init__(self, ts_control):
         # instantiate lateral controllers
-        self.roll_from_aileron = PDControlWithRate(
+        self.roll_from_aileron = pdControlWithRate(
                         kp=AP.roll_kp,
                         kd=AP.roll_kd,
                         limit=np.radians(45))
-        self.course_from_roll = PIControl(
+        self.course_from_roll = pidControl(
                         kp=AP.course_kp,
                         ki=AP.course_ki,
                         Ts=ts_control,
@@ -38,16 +39,16 @@ class Autopilot:
                         Ts=ts_control)
 
         # instantiate lateral controllers
-        self.pitch_from_elevator = PDControlWithRate(
+        self.pitch_from_elevator = pdControlWithRate(
                         kp=AP.pitch_kp,
                         kd=AP.pitch_kd,
                         limit=np.radians(45))
-        self.altitude_from_pitch = PIControl(
+        self.altitude_from_pitch = pidControl(
                         kp=AP.altitude_kp,
                         ki=AP.altitude_ki,
                         Ts=ts_control,
                         limit=np.radians(30))
-        self.airspeed_from_throttle = PIControl(
+        self.airspeed_from_throttle = pidControl(
                         kp=AP.airspeed_throttle_kp,
                         ki=AP.airspeed_throttle_ki,
                         Ts=ts_control,
@@ -70,6 +71,7 @@ class Autopilot:
         delta_e = self.pitch_from_elevator.update(theta_c, state.theta, state.q)
         delta_t_unsat = self.airspeed_from_throttle.update(cmd.airspeed_command, state.Va)
         delta_t = self.saturate(delta_t_unsat, 0, 1.0)
+        Va_command = cmd.airspeed_command
 
         # construct control output and commanded states
         delta = MsgDelta(elevator=delta_e,
