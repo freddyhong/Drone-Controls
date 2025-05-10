@@ -5,6 +5,12 @@ compute_ss_model
         2/4/2019 - RWB
 """
 import numpy as np
+import os, sys
+# insert parent directory at beginning of python search path
+from pathlib import Path
+
+# sys.path.insert(0,os.fspath(Path(__file__).parents[2]))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from scipy.optimize import minimize
 from tools.rotations import euler_to_quaternion, quaternion_to_euler
 import parameters.aerosonde_parameters as MAV

@@ -24,8 +24,8 @@ from models.mav_dynamics_sensors import MavDynamics
 from models.wind_simulation import WindSimulation
 from controllers.autopilot import Autopilot
 #from controllers.lqr_with_rate_damping import Autopilot
-#from estimators.observer import Observer
-from estimators.observer_full import Observer
+from estimators.observer import Observer
+#from estimators.observer_full import Observer
 from viewers.view_manager import ViewManager
 import time
 
