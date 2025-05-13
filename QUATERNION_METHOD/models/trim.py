@@ -25,7 +25,7 @@ def compute_trim(mav, Va, gamma):
     e0 = euler_to_quaternion(0., theta, 0.)
     state0 = np.array([[0.],  # pn
                    [0.],  # pe
-                   [0.],  # pd
+                   [-100.],  # pd
                    [Va],  # u
                    [0.], # v
                    [0.], # w
