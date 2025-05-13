@@ -29,38 +29,45 @@ class MavDynamics(MavDynamicsNoSensors):
 
     def sensors(self):
         "Return value of sensors on MAV: gyros, accels, absolute_pressure, dynamic_pressure, GPS"
-       
+        phi, theta, psi = quaternion_to_euler(self._state[6:10])
+        pdot = quaternion_to_rotation(self._state[6:10]) @ self._state[3:6]
+
         # simulate rate gyros(units are rad / sec)
-        self._sensors.gyro_x = 0
-        self._sensors.gyro_y = 0
-        self._sensors.gyro_z = 0
+        self._sensors.gyro_x = self._state.item(10) + np.random.normal(SENSOR.gyro_x_bias, SENSOR.gyro_sigma)
+        self._sensors.gyro_y = self._state.item(11) + np.random.normal(SENSOR.gyro_y_bias, SENSOR.gyro_sigma)
+        self._sensors.gyro_z = self._state.item(12) + np.random.normal(SENSOR.gyro_z_bias, SENSOR.gyro_sigma)
 
         # simulate accelerometers(units of g)
-        self._sensors.accel_x = 0
-        self._sensors.accel_y = 0
-        self._sensors.accel_z = 0
+        self._sensors.accel_x = self._forces.item(0) / MAV.mass + MAV.gravity * np.sin(theta) + np.random.normal(0, SENSOR.accel_sigma)
+        self._sensors.accel_y = self._forces.item(1) / MAV.mass - MAV.gravity * np.cos(theta) * np.sin(phi) + np.random.normal(0, SENSOR.accel_sigma)
+        self._sensors.accel_z = self._forces.item(2) / MAV.mass - MAV.gravity * np.cos(theta) * np.cos(phi) + np.random.normal(0, SENSOR.accel_sigma)
 
         # simulate magnetometers
         # magnetic field in provo has magnetic declination of 12.5 degrees
         # and magnetic inclination of 66 degrees
-        self._sensors.mag_x = 0
-        self._sensors.mag_y = 0
-        self._sensors.mag_z = 0
+        temp = euler_to_rotation(0, np.radians(66), np.radians(12.5))
+        mag_inertial = temp @ np.array([[1.0], [0.0], [0.0]])
+        R = quaternion_to_rotation(self._state[6:10])
+        mag_body = R.T @ mag_inertial
+
+        self._sensors.mag_x = mag_body.item(0) + np.random.normal(0, SENSOR.mag_sigma)
+        self._sensors.mag_y = mag_body.item(1) + np.random.normal(0, SENSOR.mag_sigma)
+        self._sensors.mag_z = mag_body.item(2) + np.random.normal(0, SENSOR.mag_sigma)
 
         # simulate pressure sensors
-        self._sensors.abs_pressure = 0
-        self._sensors.diff_pressure = 0
-        
+        self._sensors.abs_pressure = -MAV.rho * MAV.gravity * self._state.item(2) + np.random.normal(0, SENSOR.abs_pres_sigma)
+        self._sensors.diff_pressure = 0.5 * MAV.rho * self._Va**2 + np.random.normal(0, SENSOR.diff_pres_sigma)
+
         # simulate GPS sensor
         if self._t_gps >= SENSOR.ts_gps:
-            self._gps_eta_n = 0
-            self._gps_eta_e = 0
-            self._gps_eta_h = 0
-            self._sensors.gps_n = 0
-            self._sensors.gps_e = 0
-            self._sensors.gps_h = 0
-            self._sensors.gps_Vg = 0
-            self._sensors.gps_course = 0
+            self._gps_eta_n = np.exp(-SENSOR.gps_k * SENSOR.ts_gps) * self._gps_eta_n + np.random.normal(0, SENSOR.gps_n_sigma)
+            self._gps_eta_e = np.exp(-SENSOR.gps_k * SENSOR.ts_gps) * self._gps_eta_e + np.random.normal(0, SENSOR.gps_e_sigma)
+            self._gps_eta_h = np.exp(-SENSOR.gps_k * SENSOR.ts_gps) * self._gps_eta_h + np.random.normal(0, SENSOR.gps_h_sigma)
+            self._sensors.gps_n = self._state.item(0) + self._gps_eta_n
+            self._sensors.gps_e = self._state.item(1) + self._gps_eta_e
+            self._sensors.gps_h = -1 * self._state.item(2) + self._gps_eta_h
+            self._sensors.gps_Vg = np.sqrt(pdot.item(0)**2 + pdot.item(1)**2) + np.random.normal(0, SENSOR.gps_Vg_sigma)
+            self._sensors.gps_course = np.arctan2(pdot.item(1), pdot.item(0)) + np.random.normal(0, SENSOR.gps_course_sigma)
             self._t_gps = 0.
         else:
             self._t_gps += self._ts_simulation
@@ -94,5 +101,5 @@ class MavDynamics(MavDynamicsNoSensors):
         self.true_state.bx = SENSOR.gyro_x_bias
         self.true_state.by = SENSOR.gyro_y_bias
         self.true_state.bz = SENSOR.gyro_z_bias
-        # self.true_state.camera_az = self._state.item(13)
-        # self.true_state.camera_el = self._state.item(14)
+        self.true_state.camera_az = self._state.item(13)
+        self.true_state.camera_el = self._state.item(14)

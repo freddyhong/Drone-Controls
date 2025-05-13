@@ -18,7 +18,7 @@ import parameters.simulation_parameters as SIM
 from tools.signals import Signals
 from models.mav_dynamics_sensors import MavDynamics
 from models.wind_simulation import WindSimulation
-from controllers.autopilot import Autopilot
+from controllers.autopilot_lqr import Autopilot
 from viewers.view_manager import ViewManager
 import time
 
@@ -28,8 +28,8 @@ wind = WindSimulation(SIM.ts_simulation)
 mav = MavDynamics(SIM.ts_simulation)
 autopilot = Autopilot(SIM.ts_simulation)
 viewers = ViewManager(mav=True, 
-                      data=True,
-                      sensors=True,
+                      data=True, 
+                      sensors=True,  
                       video=False, video_name='chap7.mp4')
 
 # autopilot commands
@@ -50,7 +50,7 @@ course_command = Signals(dc_offset=np.radians(180),
 
 # initialize the simulation time
 sim_time = SIM.start_time
-end_time = 100
+end_time = 70
 
 # main simulation loop
 print("Press 'Esc' to exit...")
