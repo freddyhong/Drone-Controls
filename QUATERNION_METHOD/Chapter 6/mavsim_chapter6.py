@@ -8,17 +8,14 @@ mavsim_python
         7/13/2023 - RWB
 """
 import os, sys
-# insert parent directory at beginning of python search path
 from pathlib import Path
-# sys.path.insert(0,os.fspath(Path(__file__).parents[2]))
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
 import parameters.simulation_parameters as SIM
 from tools.signals import Signals
 from models.mav_dynamics_control import MavDynamics
 from models.wind_simulation import WindSimulation
-from controllers.autopilot_lqr import Autopilot
+from controllers.autopilot import Autopilot
 from viewers.view_manager import ViewManager
 import time
 
