@@ -71,13 +71,13 @@ class Observer:
             ]), 
  
             P0=np.diag([
-                (0.002)**2,  # pn (10m initial uncertainty)
-                (0.003)**2,  # pe (10m initial uncertainty)
-                (0.004)**2,  # Vg (5 m/s initial uncertainty)
-                (np.radians(0.001))**2,  # chi (10-degree uncertainty)
-                (0.002)**2,  # wn (2 m/s initial wind uncertainty)
-                (0.002)**2,  # we (2 m/s initial wind uncertainty)
-                (np.radians(0.002))**2,  # psi (10-degree uncertainty)
+                (0.002)**2, #pn
+                (0.003)**2, #pe
+                (0.004)**2, #Vg
+                (np.radians(0.001))**2, #chi
+                (0.002)**2,  #wn
+                (0.002)**2,  #we
+                (np.radians(0.002))**2,  #psi
             ]), 
  
             xhat0=np.array([
