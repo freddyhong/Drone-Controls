@@ -4,12 +4,10 @@ import numpy as np
 
 class WindSimulation:
     def __init__(self, Ts, gust_flag = True, steady_state = np.array([[0., 0., 0.]]).T):
-        # steady state wind defined in the inertial frame
         self._steady_state = steady_state
-        ##### TODO #####
 
-        #   Dryden gust model parameters (pg 56 UAV book)
 
+        #   Dryden gust model parameters
         altitude = 50
         Lu = 200
         Lv = 200
@@ -39,18 +37,13 @@ class WindSimulation:
 
 
 
-    
-
-        # Dryden transfer functions (section 4.4 UAV book) - Fill in proper num and den
         self.u_w = TransferFunction(num=np.array([[Hu_num]]), den=np.array([[Hu_a0, Hu_a1]]),Ts=Ts)
         self.v_w = TransferFunction(num=np.array([[Hv_b0,Hv_b1]]), den=np.array([[Hv_a0,Hv_a1,Hv_a2]]),Ts=Ts)
         self.w_w = TransferFunction(num=np.array([[Hw_b0,Hw_b1]]), den=np.array([[Hw_a0,Hw_a1,Hw_a2]]),Ts=Ts)
         self._Ts = Ts
 
+
     def update(self):
-        # returns a six vector.
-        #   The first three elements are the steady state wind in the inertial frame
-        #   The second three elements are the gust in the body frame
         gust = np.array([[self.u_w.update(np.random.randn())],
                          [self.v_w.update(np.random.randn())],
                          [self.w_w.update(np.random.randn())]])
