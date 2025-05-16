@@ -9,9 +9,6 @@ mavsim_python
 import os, sys
 from pathlib import Path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-# use QuitListener for Linux or PC <- doesn't work on Mac
-#from tools.quit_listener import QuitListener
 import numpy as np
 import parameters.simulation_parameters as SIM
 from models.mav_dynamics_control import MavDynamics
@@ -22,7 +19,6 @@ from tools.signals import Signals
 from viewers.view_manager import ViewManager
 import time
 
-#quitter = QuitListener()
 
 # initialize elements of the architecture
 wind = WindSimulation(SIM.ts_simulation)
@@ -51,7 +47,7 @@ delta_r_trim = delta.rudder
 
 # initialize the simulation time
 sim_time = SIM.start_time
-end_time = 60
+end_time = 100
 
 # main simulation loop
 print("Press 'Esc' to exit...")

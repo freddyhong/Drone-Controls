@@ -18,9 +18,7 @@ from tools.rotations import quaternion_to_rotation, quaternion_to_euler, euler_t
 class MavDynamics(MavDynamicsNoSensors):
     def __init__(self, Ts):
         super().__init__(Ts)
-        # initialize the sensors message
         self._sensors = MsgSensors()
-        # random walk parameters for GPS
         self._gps_eta_n = 0.
         self._gps_eta_e = 0.
         self._gps_eta_h = 0.
@@ -28,23 +26,21 @@ class MavDynamics(MavDynamicsNoSensors):
         self._t_gps = 999.  # large value ensures gps updates at initial time.
 
     def sensors(self):
-        "Return value of sensors on MAV: gyros, accels, absolute_pressure, dynamic_pressure, GPS"
+        "sensors on MAV: gyros, accels, absolute pressure, dynamic pressure, GPS"
         phi, theta, psi = quaternion_to_euler(self._state[6:10])
         pdot = quaternion_to_rotation(self._state[6:10]) @ self._state[3:6]
 
-        # simulate rate gyros(units are rad / sec)
+        # gyros
         self._sensors.gyro_x = self._state.item(10) + np.random.normal(SENSOR.gyro_x_bias, SENSOR.gyro_sigma)
         self._sensors.gyro_y = self._state.item(11) + np.random.normal(SENSOR.gyro_y_bias, SENSOR.gyro_sigma)
         self._sensors.gyro_z = self._state.item(12) + np.random.normal(SENSOR.gyro_z_bias, SENSOR.gyro_sigma)
 
-        # simulate accelerometers(units of g)
+        #  accelerometers
         self._sensors.accel_x = self._forces.item(0) / MAV.mass + MAV.gravity * np.sin(theta) + np.random.normal(0, SENSOR.accel_sigma)
         self._sensors.accel_y = self._forces.item(1) / MAV.mass - MAV.gravity * np.cos(theta) * np.sin(phi) + np.random.normal(0, SENSOR.accel_sigma)
         self._sensors.accel_z = self._forces.item(2) / MAV.mass - MAV.gravity * np.cos(theta) * np.cos(phi) + np.random.normal(0, SENSOR.accel_sigma)
 
-        # simulate magnetometers
-        # magnetic field in provo has magnetic declination of 12.5 degrees
-        # and magnetic inclination of 66 degrees
+        # magnetometers
         temp = euler_to_rotation(0, np.radians(66), np.radians(12.5))
         mag_inertial = temp @ np.array([[1.0], [0.0], [0.0]])
         R = quaternion_to_rotation(self._state[6:10])
@@ -54,11 +50,11 @@ class MavDynamics(MavDynamicsNoSensors):
         self._sensors.mag_y = mag_body.item(1) + np.random.normal(0, SENSOR.mag_sigma)
         self._sensors.mag_z = mag_body.item(2) + np.random.normal(0, SENSOR.mag_sigma)
 
-        # simulate pressure sensors
+        # pressure sensors
         self._sensors.abs_pressure = -MAV.rho * MAV.gravity * self._state.item(2) + np.random.normal(0, SENSOR.abs_pres_sigma)
         self._sensors.diff_pressure = 0.5 * MAV.rho * self._Va**2 + np.random.normal(0, SENSOR.diff_pres_sigma)
 
-        # simulate GPS sensor
+        # GPS sensor
         if self._t_gps >= SENSOR.ts_gps:
             self._gps_eta_n = np.exp(-SENSOR.gps_k * SENSOR.ts_gps) * self._gps_eta_n + np.random.normal(0, SENSOR.gps_n_sigma)
             self._gps_eta_e = np.exp(-SENSOR.gps_k * SENSOR.ts_gps) * self._gps_eta_e + np.random.normal(0, SENSOR.gps_e_sigma)
@@ -77,8 +73,7 @@ class MavDynamics(MavDynamicsNoSensors):
         self._state = new_state
 
     def _update_true_state(self):
-        # update the class structure for the true state:
-        #   [pn, pe, h, Va, alpha, beta, phi, theta, chi, p, q, r, Vg, wn, we, psi, gyro_bx, gyro_by, gyro_bz]
+        # true state: [pn, pe, h, Va, alpha, beta, phi, theta, chi, p, q, r, Vg, wn, we, psi, gyro_bx, gyro_by, gyro_bz]
         phi, theta, psi = quaternion_to_euler(self._state[6:10])
         pdot = quaternion_to_rotation(self._state[6:10]) @ self._state[3:6]
         self.true_state.north = self._state.item(0)

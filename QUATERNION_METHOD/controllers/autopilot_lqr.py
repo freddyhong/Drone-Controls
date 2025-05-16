@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
 from numpy import array, sin, cos, radians, concatenate, zeros, diag
 from scipy.linalg import solve_continuous_are, inv
@@ -19,7 +22,7 @@ def saturate(input, low_limit, up_limit):
 class Autopilot:
     def __init__(self, ts_control):
         self.Ts = ts_control
-        # initialize integrators and delay variables
+        # instantiate lateral-directional controllers
         self.integratorCourse = 0
         self.integratorAltitude = 0
         self.integratorAirspeed = 0
@@ -28,13 +31,12 @@ class Autopilot:
         self.errorAirspeedD1 = 0
         
         # compute LQR gains
-        CrLat = array([[0., 0., 0., 0., 1.0]]) # or is it all zeros?
+        CrLat = array([[0., 0., 0., 0., 1.0]]) 
         AAlat = concatenate((
                     concatenate((M.A_lat, zeros((5,1))), axis=1),
                     concatenate((CrLat, zeros((1,1))), axis=1)),
                     axis=0)
         BBlat = concatenate((M.B_lat, zeros((1,2))), axis=0)
-        #Qlat = diag([0.001, 0.01, 0.1, 100.0, 1.0, 100.0]) # v, p, r, phi, chi, intChi
         Qlat = diag([0.01, 0.01, 0.01, 10.0, 1.0, 10.0]) # v, p, r, phi, chi, intChi
         Rlat = diag([1.0, 1.0]) # a, r
         Plat = solve_continuous_are(AAlat, BBlat, Qlat, Rlat)
@@ -45,7 +47,6 @@ class Autopilot:
                     concatenate((CrLon, zeros((2,2))), axis=1)),
                     axis=0)
         BBlon = concatenate((M.B_lon, zeros((2, 2))), axis=0)
-        #Qlon = diag([10.0, 10.0, 0.001, 0.001, 10.0, 100.0, 100.0]) # u, w, q, theta, h, intH, intVa
         Qlon = diag([10.0, 10.0, 0.01, 0.01, 100.0, 10.0, 10.0]) # u, w, q, theta, h, intH, intVa
         Rlon = diag([1.0, 1.0])  # e, t
         Plon = solve_continuous_are(AAlon, BBlon, Qlon, Rlon)

@@ -15,7 +15,7 @@ import parameters.simulation_parameters as SIM
 from tools.signals import Signals
 from models.mav_dynamics_control import MavDynamics
 from models.wind_simulation import WindSimulation
-from controllers.autopilot import Autopilot
+from controllers.autopilot_lqr import Autopilot
 from viewers.view_manager import ViewManager
 import time
 
@@ -47,7 +47,7 @@ course_command = Signals(dc_offset=np.radians(180),
 
 # initialize the simulation time
 sim_time = SIM.start_time
-end_time = 300
+end_time = 60
 
 # main simulation loop
 print("Press 'Esc' to exit...")

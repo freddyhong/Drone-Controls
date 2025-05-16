@@ -16,13 +16,9 @@ import parameters.aerosonde_parameters as MAV
 from parameters.simulation_parameters import ts_simulation as Ts
 from message_types.msg_delta import MsgDelta
 from models.mav_dynamics import MavDynamics
-# from IPython.core.debugger import set_trace
-
-
 
 def compute_model(mav, trim_state, trim_input):
 
-    # Note: this function alters the mav private variables
     A_lon, B_lon, A_lat, B_lat = compute_ss_model(mav, trim_state, trim_input)
     Va_trim, alpha_trim, theta_trim, a_phi1, a_phi2, a_theta1, a_theta2, a_theta3, \
     a_V1, a_V2, a_V3 = compute_tf_model(mav, trim_state, trim_input)
@@ -161,16 +157,6 @@ def compute_ss_model(mav, trim_state, trim_input):
         A_lon[4,i] = -A_lon[4,i]
     for i in range(0,2):
         B_lon[4,i] = -B_lon[4,i] 
-
-    # A_lon[3, 2] = 1  # Ensure correct relationship: theta-dot = q
-
-
-    # eigenvalues = analyze_longitudinal_modes(A_lon)
-    # Example Usage (Replace A_lon with actual matrix)
-    # eigenvalues, modes = analyze_longitudinal_modes(A_lon)
-    # print("Eigenvalues of A_lon:", eigenvalues)
-    # print("Short-Period Mode:", modes["short_period"])
-    # print("Phugoid Mode:", modes["phugoid"])
 
     
     # **3. Extract Lateral System Matrices**
