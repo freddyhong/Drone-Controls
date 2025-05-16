@@ -16,13 +16,12 @@ from message_types.msg_delta import MsgDelta
 import time
 
 def compute_trim(mav, Va, gamma):
-    # define initial state and input
-
-    ##### TODO #####
-    # set the initial conditions of the optimization
-    alpha = 0.0 # angle of attack, change if needed
-    theta = alpha + gamma
-    e0 = euler_to_quaternion(0., theta, 0.)
+    """
+    compute the trim state and input for the MAV
+    """
+    alpha = 0.0 # angle of attack
+    theta = alpha + gamma # pitch angle
+    e0 = euler_to_quaternion(0., theta, 0.) # quaternion from euler angles
     state0 = np.array([[0.],  # pn
                    [0.],  # pe
                    [-100.],  # pd
@@ -42,15 +41,15 @@ def compute_trim(mav, Va, gamma):
                        [0],  # rudder
                        [0]]) # throttle
     x0 = np.concatenate((state0, delta0), axis=0)
-    # define equality constraints
+
     cons = ({'type': 'eq',
              'fun': lambda x: np.array([
                                 x[3]**2 + x[4]**2 + x[5]**2 - Va**2,  # magnitude of velocity vector is Va
                                 x[4],  # v=0, force side velocity to be zero
                                 x[6]**2 + x[7]**2 + x[8]**2 + x[9]**2 - 1.,  # force quaternion to be unit length
-                                x[7],  # e1=0  - forcing e1=e3=0 ensures zero roll and zero yaw in trim
+                                x[7],  # e1=0  forcing e1=e3=0 so zero roll and zero yaw in trim
                                 x[9],  # e3=0
-                                x[10],  # p=0  - angular rates should all be zero
+                                x[10],  # p=0  angular rates should all be zero
                                 x[11],  # q=0
                                 x[12],  # r=0
                                 ]),
@@ -83,7 +82,6 @@ def compute_trim(mav, Va, gamma):
 
 def trim_objective_fun(x, mav, Va, gamma):
     # objective function to be minimized
-    ##### TODO #####
     state = state = x[:13]
     delta = MsgDelta(elevator=x.item(13),
                       aileron=x.item(14),
@@ -105,13 +103,12 @@ def trim_objective_fun(x, mav, Va, gamma):
                             [0.]  # r
                             ])
 
-
     # set state and input of the aircraft
     mav._state = state
     mav._update_velocity_data()
 
-    forces_moments = mav._forces_moments(delta) # get forces and moments
-    f = mav._f(state, forces_moments) # get state derivatives
+    forces_moments = mav._forces_moments(delta)
+    f = mav._f(state, forces_moments)
 
     J = np.linalg.norm(desired_trim_state_dot[2:13] - f[2:13])**2
 
