@@ -6,7 +6,7 @@ from numpy import array, sin, cos, radians, concatenate, zeros, diag
 from scipy.linalg import solve_continuous_are, inv
 import parameters.control_parameters as AP
 from tools.wrap import wrap
-import models.model_coef_solution as M
+import models.new_model_coef as M
 from message_types.msg_state import MsgState
 from message_types.msg_delta import MsgDelta
 

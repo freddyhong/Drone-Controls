@@ -16,12 +16,12 @@ from message_types.msg_delta import MsgDelta
 import time
 
 def compute_trim(mav, Va, gamma):
-    """
-    compute the trim state and input for the MAV
-    """
-    alpha = 0.0 # angle of attack
-    theta = alpha + gamma # pitch angle
-    e0 = euler_to_quaternion(0., theta, 0.) # quaternion from euler angles
+    # define initial state and input
+
+    # set the initial conditions of the optimization
+    alpha = 0.0 # angle of attack, change if needed
+    theta = alpha + gamma
+    e0 = euler_to_quaternion(0., theta, 0.)
     state0 = np.array([[0.],  # pn
                    [0.],  # pe
                    [-100.],  # pd

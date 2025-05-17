@@ -24,7 +24,6 @@ class Observer:
         # initialized estimated state message
         self.estimated_state = MsgState()
 
-        ##### TODO #####
         self.lpf_gyro_x = AlphaFilter(alpha=0.3, y0=initial_measurements.gyro_x)
         self.lpf_gyro_y = AlphaFilter(alpha=0.2, y0=initial_measurements.gyro_y)
         self.lpf_gyro_z = AlphaFilter(alpha=0.5, y0=initial_measurements.gyro_z)
@@ -105,10 +104,10 @@ class Observer:
                 SENSOR.accel_sigma**2
                 ])
         self.R_pseudo = 10 * np.diag([
-                1.0,  # pseudo measurement #1 ##### TODO #####
-                1.0,  # pseudo measurement #2 ##### TODO #####
-                1.0,  # pseudo measurement #3 ##### TODO #####
-                1.0,  # pseudo measurement #4 ##### TODO #####
+                1.0,  # pseudo measurement #1
+                1.0,  # pseudo measurement #2
+                1.0,  # pseudo measurement #3
+                1.0,  # pseudo measurement #4
                 ])
         self.R_gps = np.diag([
                     SENSOR.gps_n_sigma**2,  # y_gps_n
@@ -122,7 +121,6 @@ class Observer:
         self.gps_course_old = 9999
 
     def update(self, measurement: MsgSensors) -> MsgState:
-        ##### TODO #####
         # estimates for p, q, r are low pass filter of gyro minus bias estimate
         self.estimated_state.p = self.lpf_gyro_x.update(measurement.gyro_x) - SENSOR.gyro_x_bias
         self.estimated_state.q = self.lpf_gyro_y.update(measurement.gyro_y) - SENSOR.gyro_y_bias
@@ -227,7 +225,6 @@ class Observer:
                 x = [phi, theta].T
                 u = [p, q, r, Va].T
         '''
-        ##### TODO #####
         phi, theta = x.flatten()
         p, q, r, Va = u.flatten()
 
@@ -244,7 +241,6 @@ class Observer:
                 x = [pn, pe, Vg, chi, wn, we, psi].T
                 u = [p, q, r, Va, phi, theta].T
         '''
-        ##### TODO #####
         pn, pe, Vg, chi, wn, we, psi = x.flatten()
         q, r, Va, phi, theta = u.flatten()
         pn_dot = Vg * np.cos(chi)
@@ -262,15 +258,14 @@ class Observer:
     def h_pseudo(self, x: np.ndarray, u: np.ndarray) -> np.ndarray:
         pn, pe, Vg, chi, wn, we, psi = x.flatten()
 
-        # Enforce wind constraints using airspeed and ground speed
         Vn = Vg * np.cos(chi)
         Ve = Vg * np.sin(chi)
         
         y = np.array([
             [pn], 
             [pe], 
-            [Vn - wn],  # Ground speed in North should match wind + airspeed
-            [Ve - we]   # Ground speed in East should match wind + airspeed
+            [Vn - wn],  
+            [Ve - we]  
         ])
         return y
 
@@ -281,8 +276,7 @@ class Observer:
                 u = [p, q, r, Va, phi, theta].T
             returns
                 y = [pn, pe, Vg, chi]
-        '''
-        ##### TODO #####         
+        '''         
         pn, pe, Vg, chi, wn, we, psi = x.flatten()
 
         y = np.array([[pn], [pe], [Vg], [chi]])

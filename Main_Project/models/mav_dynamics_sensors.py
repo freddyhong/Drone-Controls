@@ -40,7 +40,6 @@ class MavDynamics(MavDynamicsNoSensors):
         self._sensors.accel_y = self._forces.item(1) / MAV.mass - MAV.gravity * np.cos(theta) * np.sin(phi) + np.random.normal(0, SENSOR.accel_sigma)
         self._sensors.accel_z = self._forces.item(2) / MAV.mass - MAV.gravity * np.cos(theta) * np.cos(phi) + np.random.normal(0, SENSOR.accel_sigma)
 
-        # magnetometers
         temp = euler_to_rotation(0, np.radians(66), np.radians(12.5))
         mag_inertial = temp @ np.array([[1.0], [0.0], [0.0]])
         R = quaternion_to_rotation(self._state[6:10])

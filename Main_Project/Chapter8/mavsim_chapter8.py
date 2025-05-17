@@ -49,7 +49,7 @@ chi_command = Signals(dc_offset=np.radians(0.0),
 
 # initialize the simulation time
 sim_time = SIM.start_time
-end_time = 100
+end_time = 110
 
 # main simulation loop
 print("Press 'Esc' to exit...")
